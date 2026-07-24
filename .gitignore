@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+
+# Local datasets
+/datasets/IRSTD-1K/
+/datasets/NUAA-SIRST/
+/datasets/NUDT-SIRST/
+
+# Training outputs, checkpoints, and logs
+/experiments/results/
+/log/
+/otherlogs/
+/analysis/results/
+/analysis/smoke_results/
+*.pth
+*.pth.tar
+events.out.tfevents.*
+
+# Local Codex handoff context
+/CODEX_WINDOW_CONTEXT_*.md

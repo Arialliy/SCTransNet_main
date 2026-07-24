@@ -121,13 +121,15 @@ class PD_FA():
 
         self.dismatch = [x for x in self.image_area_total if x not in self.image_area_match] # 在image里面 但是不在label里面
         self.dismatch_pixel += np.sum(self.dismatch)  # Fa 虚警
-        self.all_pixel += size[0] * size[1]
+        height = int(size[0].reshape(-1)[0].item()) if torch.is_tensor(size[0]) else int(size[0])
+        width = int(size[1].reshape(-1)[0].item()) if torch.is_tensor(size[1]) else int(size[1])
+        self.all_pixel += height * width
         self.PD += len(self.distance_match)  # 如果中心点之间距离在3一下 就算Pd  所以Pd 是匹配上了的目标的个数
 
     def get(self):
         Final_FA = self.dismatch_pixel / self.all_pixel
         Final_PD = self.PD / self.target
-        return Final_PD, float(Final_FA.cpu().detach().numpy())
+        return Final_PD, float(Final_FA)
 
     def reset(self):
         self.FA = np.zeros([self.bins + 1])

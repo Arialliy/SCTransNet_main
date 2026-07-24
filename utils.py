@@ -182,7 +182,7 @@ def get_optimizer(net, optimizer_name, scheduler_name, optimizer_settings, sched
     #                                                            eta_min=scheduler_settings['eta_min'])
     elif scheduler_name == 'CosineAnnealingLR':
         warmup_epochs = 10
-        scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=scheduler_settings['epochs'] - warmup_epochs,
+        scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(1, scheduler_settings['epochs'] - warmup_epochs),
                                                                       eta_min=scheduler_settings['eta_min'])
         scheduler = GradualWarmupScheduler(optimizer, multiplier=1, total_epoch=warmup_epochs,
                                            after_scheduler=scheduler_cosine)

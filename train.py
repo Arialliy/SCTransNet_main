@@ -3,7 +3,7 @@ import time
 import os
 import cv2
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from dataset import *
@@ -14,8 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 from model.SCTransNet import SCTransNet as SCTransNet
 
 parser = argparse.ArgumentParser(description="PyTorch BasicIRSTD train")
-parser.add_argument("--model_names", default=['SCTransNet'], type=list, help="'ACM', 'ALCNet', 'DNANet', 'ISNet', 'UIUNet', 'RDIAN', 'RISTDnet'")
-parser.add_argument("--dataset_names", default=['SIRST3'], type=list)
+parser.add_argument("--model_names", default=['SCTransNet'], nargs='+', help="'ACM', 'ALCNet', 'DNANet', 'ISNet', 'UIUNet', 'RDIAN', 'RISTDnet'")
+parser.add_argument("--dataset_names", default=['IRSTD-1K'], nargs='+')
 # SIRST3： NUAA NUDT IRSTD-1K
 parser.add_argument("--optimizer_name", default='Adam', type=str, help="optimizer name: AdamW, Adam, Adagrad, SGD")
 parser.add_argument("--epochs", default=1000, type=int, help="optimizer name: AdamW, Adam, Adagrad, SGD")
@@ -32,7 +32,7 @@ parser.add_argument("--img_norm_cfg", default=None, type=dict)
 parser.add_argument("--threads", type=int, default=0, help="Number of threads for data loader to use")
 parser.add_argument("--threshold", type=float, default=0.5, help="Threshold for test")
 parser.add_argument("--seed", type=int, default=42, help="Threshold for test")
-parser.add_argument("--resume", default=False, type=list, help="Resume from exisiting checkpoints (default: None)")
+parser.add_argument("--resume", default='', type=str, help="Resume from an existing checkpoint")
 
 global opt
 opt = parser.parse_args()
@@ -64,20 +64,21 @@ def train():
     epoch_state = 0
     total_loss_list = []
     total_loss_epoch = []
+    resume_checkpoint = None
+    best_mIOU = (0, 0)
+    best_Pd = (0, 0)
 
     if not os.path.exists(opt.log_dir):
         os.makedirs(opt.log_dir)
     writer = SummaryWriter(opt.log_dir)
 
     if opt.resume:
-        # for resume_pth in opt.resume:
-        #     if opt.dataset_name in resume_pth and opt.model_name in resume_pth:
-        ckpt = torch.load('XX\\UCT04_best.pth.tar')
-        net.load_state_dict(ckpt['state_dict'])
-        epoch_state = ckpt['epoch']
-        total_loss_list = ckpt['total_loss']
-        # for i in range(len(opt.scheduler_settings['step'])):
-        #     opt.scheduler_settings['step'][i] = opt.scheduler_settings['step'][i] - ckpt['epoch']
+        resume_checkpoint = torch.load(opt.resume, map_location='cuda', weights_only=False)
+        net.load_state_dict(resume_checkpoint['state_dict'])
+        epoch_state = resume_checkpoint['epoch']
+        total_loss_list = resume_checkpoint.get('total_loss', [])
+        best_mIOU = resume_checkpoint.get('best_mIOU', best_mIOU)
+        best_Pd = resume_checkpoint.get('best_Pd', best_Pd)
 
     ### Default settings of SCTransNet
     if opt.optimizer_name == 'Adam':
@@ -102,6 +103,14 @@ def train():
 
     optimizer, scheduler = get_optimizer(net, opt.optimizer_name, opt.scheduler_name, opt.optimizer_settings,
                                          opt.scheduler_settings)
+
+    if resume_checkpoint is not None:
+        if 'optimizer' in resume_checkpoint and 'scheduler' in resume_checkpoint:
+            optimizer.load_state_dict(resume_checkpoint['optimizer'])
+            scheduler.load_state_dict(resume_checkpoint['scheduler'])
+        else:
+            for _ in range(epoch_state):
+                scheduler.step()
 
 
     for idx_epoch in range(epoch_state, opt.nEpochs):
@@ -171,6 +180,10 @@ def train():
                 'epoch': idx_epoch + 1,
                 'state_dict': net.state_dict(),
                 'total_loss': total_loss_list,
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+                'best_mIOU': best_mIOU,
+                'best_Pd': best_Pd,
             }, save_pth)
             test(save_pth)
 
@@ -194,6 +207,10 @@ def train():
                 'epoch': idx_epoch + 1,
                 'state_dict': net.state_dict(),
                 'total_loss': total_loss_list,
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+                'best_mIOU': best_mIOU,
+                'best_Pd': best_Pd,
             }, save_pth)
 
         # last epoch
@@ -203,6 +220,10 @@ def train():
                 'epoch': idx_epoch + 1,
                 'state_dict': net.state_dict(),
                 'total_loss': total_loss_list,
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+                'best_mIOU': best_mIOU,
+                'best_Pd': best_Pd,
             }, save_pth)
             test(save_pth)
 
@@ -212,7 +233,7 @@ def test(save_pth):
     test_loader = DataLoader(dataset=test_set, num_workers=1, batch_size=1, shuffle=False)
 
     net = Net(model_name=opt.model_name, mode='test').cuda()
-    ckpt = torch.load(save_pth)
+    ckpt = torch.load(save_pth, map_location='cuda', weights_only=False)
     net.load_state_dict(ckpt['state_dict'])
     net.eval()
     with torch.no_grad():
