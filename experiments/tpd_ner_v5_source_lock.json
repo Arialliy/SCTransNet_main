@@ -1,0 +1,95 @@
+{
+  "schema": "sctransnet_tpd_ner_v5_source_lock_v1",
+  "created_at_utc": "2026-07-26T10:27:40Z",
+  "candidate_family": "tpd_clean_v5_explicit_five_node_ner_v1",
+  "mainline_contract": "Keep-Context-Saliency",
+  "fourth_parallel_branch_added": false,
+  "five_nodes_are_evidence_states_not_tokenizer_branches": true,
+  "evidence_nodes": [
+    "h11",
+    "h12",
+    "h13",
+    "h21",
+    "h22"
+  ],
+  "relay_stage_order": [
+    4,
+    3,
+    2
+  ],
+  "relay_width": 8,
+  "variants": [
+    "tpd_clean_v5_full_relay_off",
+    "tpd_clean_v5_full_relay_on",
+    "progressive_relay_off",
+    "progressive_relay_on"
+  ],
+  "model_seeds": [
+    42,
+    3407
+  ],
+  "planned_epochs_per_run": 800,
+  "planned_fresh_runs": 8,
+  "formal_training_started": false,
+  "gate_connection": "tpd_clean_v5_gate_a_to_e",
+  "launch_authorization": "blocked_until_v5_engineering_gate_passed",
+  "survival_supervision_connected": false,
+  "query_only_frequency_gate_connected": false,
+  "production_parameter_contract": {
+    "shallow_embedding_parameters": 66176,
+    "relay_off_total_parameters": 10843155,
+    "relay_on_total_parameters": 10854446,
+    "relay_parameters": 11291,
+    "relay_gate_parameters": 27
+  },
+  "initialization_contract": {
+    "paired_common_state_exact": true,
+    "paired_step_zero_six_outputs_exact": true,
+    "relay_state_prefix": "tpd_ner.",
+    "relay_on_adds_only_relay_parameters": true,
+    "relay_gates_zero_initialized": true,
+    "progressive_shallow_capacity_matched": true
+  },
+  "verification": {
+    "targeted_tests": {
+      "passed": 23,
+      "subtests_passed": 715
+    },
+    "broader_related_tests": {
+      "passed": 131,
+      "subtests_passed": 1647
+    },
+    "cpu_two_step_all_variants": "complete",
+    "strict_model_state_reload_max_abs_difference": 0.0,
+    "full_training_state_exact_resume": "deferred_to_post_gate_formal_runner"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "frozen_v5_source_lock_sha256": "cb7da82abbfbbf9ab2f814ad22c2b81528ea9ac74a004e4923024bd1a00dac40",
+  "frozen_legacy_ner_source_lock_sha256": "b7ab669cfe4e4790397e222594590980919e38b0a25796370fb17c579091d970",
+  "source_sha256": {
+    "model/tpd_ner_v5.py": "bc5f94bfbb748b3a385b76279eb7b60facbba61eb90bfee54e6694a0f6cde9cb",
+    "experiments/train_tpd_ner_v5.py": "281784b9d61c9a1f166ef87ec86eed1f8992441d9ec5ed5769770fe37f8134a1",
+    "experiments/evaluate_tpd_ner_v5_pd_fa.py": "34e77a217e55f812294d10d101aea2c008b2f7fac4d5892cecc2837a70b10a7d",
+    "experiments/smoke_tpd_ner_v5.py": "d25a06b435e21f2b4d687a6faecb1a4e6f4202ba410b224c910d7ae598146e89",
+    "experiments/TPD_NER_V5_PROTOCOL.md": "a6584670ca1bce7c6d71175b581841f4ae6a96b8fa08a07b352920bc4dd97cd8",
+    "tests/test_tpd_ner_v5.py": "a7ceec1e362c563856cd571abe4d4985ca530974527d98c76733d01b216006ea",
+    "tests/test_train_tpd_ner_v5.py": "806f52f96cea45de2f865a585ad99661cad4edc61a44d39cab5446872b8af189",
+    "tests/test_evaluate_tpd_ner_v5_pd_fa.py": "f44dbaf733b42062c61922ee2f2b7b40d93a7a6122cc8e49af20b6afb3137241",
+    "tests/test_smoke_tpd_ner_v5.py": "23dedcd142d5ea18374b8a8482bceb6758f7fa3eec47b9ab36b8e0f166ab71e2",
+    "tests/test_tpd_ner_v5_source_lock.py": "47af801cbc59f622b6024d2ab334bd9035346a3f4e1e54654afba71c78f1cd24",
+    "experiments/tpd_ner_runtime.py": "d6f936cf7c7ee011e2fcada3c278ac0a1cb881e4bdb8e14db5523e8822faa213",
+    "model/tpd_sctransnet.py": "cf887b55411da8219f32b8c2a5e248b5ffec403f13146a6a1806fec4e1c014af",
+    "model/tpd_relay.py": "ad80f3fcc2013a85d436bb7c4f7007af51752cbb457269c0ca5f327b825f2980",
+    "model/tpd_clean_v5.py": "a4ce8c534d23c93408a02b2a5d65d544622c2ed62875cf01f5f71b7b132e4b16",
+    "experiments/evaluate_tpd_clean_v5_pd_fa.py": "34205e516626e73cafb2acea4fe7bb7d1fdd085e79b364f2d7789b40d2cac1fc",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596",
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13",
+    "warmup_scheduler.py": "d7ebc3f9568ebd2da6b141d2923dba22c70d523099320e8aee5e769426b62493",
+    "experiments/tpd_clean_v5_screen800_2x_source_lock.json": "cb7da82abbfbbf9ab2f814ad22c2b81528ea9ac74a004e4923024bd1a00dac40",
+    "experiments/tpd_ner_v1_source_lock.json": "b7ab669cfe4e4790397e222594590980919e38b0a25796370fb17c579091d970"
+  }
+}

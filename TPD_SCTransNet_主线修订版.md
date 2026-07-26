@@ -1,9 +1,9 @@
 # TPD-SCTransNet 主线修订版：面向跨层 Token 化的目标保真下采样
 
-> 状态：已完成 NUDT-SIRST 单 seed、100-epoch 四变体 pilot；800-epoch 正式验证待运行  
-> 主线：保留“浅层 tokenization 的目标保真”研究问题；当前 TPD-PE 实现尚未通过专属性门槛，不能预设为核心创新  
+> 状态：已完成 NUDT-SIRST 单 seed formal800 与 TPD-Clean-v2 800-epoch 四候选筛选；正式判定仍为 `INCONCLUSIVE_MIXED_TRADEOFF`
+> 主线：Keep–Context–Saliency TPD 与“浅层 tokenization 的目标保真”创新主线保持不变；多种子证据前不替换主线
 > 核心模块：TPD-PE（Target-Preserving Downsampling Patch Embedding）  
-> 当前阶段：候选模块筛选；Progressive/SPD 为必须保留的强对照，NER/FG 暂不进入主模型
+> 当前阶段：优化现有 Keep 投影、残差注入与融合；显式 NER 代码已隔离完成，但因下一模块门槛未通过而不启动正式训练
 
 ## 1. Pilot 后的主线判定
 
@@ -91,7 +91,7 @@ x4 -- original PE  --> emb4
 
 输出通道与空间尺寸完全不变，因此 SSCA 的 `KV_size=480`、Reconstruct、CFN 和解码器接口均不改变。
 
-### 3.2 基础单元 TPD2
+### 3.2 TPD-v1 基础单元 TPD2（历史基线定义）
 
 把一次 stride-16/8 压缩分解成若干个相位一致的 stride-2 单元。对输入 $F\in\mathbb R^{C\times H\times W}$：
 
@@ -147,7 +147,40 @@ class TPD2(nn.Module):
 
 第一版在每个非末级 `TPD2` 融合后使用 ReLU，末级保持线性输出；所有 progressive 对照必须采用相同的深度和激活安排。
 
-### 3.3 层次化 TPD-PE
+上述 grouped Keep 与 concat–`1×1` 融合是冻结的 TPD-v1 历史定义，不是当前
+TPD-Clean-v3 正式训练代码。它继续作为主线来源和对照，不应被用来描述 v3
+候选的具体拓扑。
+
+### 3.3 TPD-Clean-v3 的当前 KCS 实现
+
+TPD-Clean-v3 不改变 Keep–Context–Saliency 三个语义源，也不增加第四个并列
+分支；它只在 `embeddings_1/2` 内优化 Keep 投影、Context 校准、残差注入和
+融合。
+
+$$
+K=\operatorname{Conv}^{dense}_{1\times1}(\operatorname{PixelUnshuffle}_{2}(F)),
+C=\operatorname{AvgPool}_{2,2}(F),
+S=\operatorname{MaxPool}_{2,2}(F)-C.
+$$
+
+Full 候选使用 Context 归一化条件码和以 dense-SPD Keep 为锚点的有界融合：
+
+$$
+\widehat C=\tanh\!\left(\frac{C-\operatorname{Mean}_{HW}(C)}{\sqrt{\operatorname{Mean}_{HW}[(C-\operatorname{Mean}_{HW}(C))^2]+\epsilon}}\right),
+F_{out}=K+\tanh(\alpha_s)\odot S+\tanh(\alpha_c)\odot(S\odot\widehat C).
+$$
+
+因此 Context 只能调制 Saliency 已有的空间支持，不能在其外部独立制造
+响应；两个逐通道尺度均从零初始化，所以 step 0 与 dense SPD 严格等价。
+容量对照 `tpd_clean_v3_sal_capacity` 令 $\widehat C=1$，但保留相同的尺度、
+参数布局、初始化和残差范围；它不是完整三分支主模型，`tpd_clean_v3_full` 才是
+KCS 主候选。
+
+当前权威实现为 `model/tpd_clean_v3.py`；训练元数据必须保持
+`mainline_contract=Keep-Context-Saliency` 和
+`fourth_parallel_branch_added=false`。
+
+### 3.4 层次化 TPD-PE
 
 $$
 \operatorname{TPD\text{-}PE}_{r}(F)
@@ -163,9 +196,13 @@ $$
 
 分级实现避免一次 `PixelUnshuffle(16)` 产生 `256C` 通道。以 `emb1` 为例，一次重排会产生 8192 通道；分级实现每次最多仅为 `4C`。
 
-### 3.4 参数与容量边界
+### 3.5 参数与容量边界
 
 原始 `emb1+emb2` 卷积参数约为 524,384。上述 TPD-PE Lite 的卷积参数约为 50,752，不依靠参数膨胀取得优势，理论 MAC 与原 Patch Embedding 大致同阶。
+
+这里的 50,752 是 TPD-v1 Lite 的历史统计。当前 v3 Full 与 capacity control
+采用相同的 dense Keep 和同构参数布局，整网实测参数均固定为 10,843,475；
+二者差异不能解释为容量差异。
 
 正式实验仍必须报告实测参数、MAC、吞吐、单图延迟和峰值显存；不能用理论估计替代结果。
 

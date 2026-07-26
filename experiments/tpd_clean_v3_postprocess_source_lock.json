@@ -1,0 +1,26 @@
+{
+  "schema": "sctransnet_tpd_clean_v3_postprocess_source_lock_v1",
+  "created_at_utc": "2026-07-25T12:10:31Z",
+  "updated_at_utc": "2026-07-25T12:53:23Z",
+  "scope": "TPD-Clean-v3 screen800 post-training artifact validation, frozen-reference loading, seven-gate comparison, and persistent finalization",
+  "training_source_lock_sha256": "9d735db3ad8b6fa0dc10a32afb666c0cd1e9757c61121293c85ed5869020058b",
+  "source_sha256": {
+    "experiments/summarize_tpd_clean_v3_screen800.py": "a3094a21338df69e5c74683d9a531b89d0a4cbafcd2568ef54e043a09095280f",
+    "experiments/validate_tpd_clean_v3_completion.py": "898049e56dc852c7bf8aa803055910115ebcce52364fd324d51b173688cce3ec",
+    "experiments/run_tpd_clean_v3_screen800_finalizer.sh": "4e38af000dfbdf3586c1f1ea8e6186e21e1eaa7f2d3bd204acfa545ae0f7e24e",
+    "experiments/launch_tpd_clean_v3_screen800_finalizer.sh": "9785f90fa67facb12f2d15c4df3fc19bc89cef8c29093b7e1c44bcfdb499287f",
+    "tests/test_summarize_tpd_clean_v3_screen800.py": "4193d4bf54ebba0f05321c8312ee7a309b13720c6c955829d5956e0a3c25cafb",
+    "tests/test_validate_tpd_clean_v3_completion.py": "085743f425970a40a0516eb49ff36d460b85859a5527702b028d323fc56ce7b4",
+    "tests/test_tpd_clean_v3_finalizer.py": "ae9efcc4a792a922d7be6723abce741d33b111f4f964f24393204546a3fd948d",
+    "experiments/TPD_CLEAN_V3_PROTOCOL.md": "af1934a7b4ca49a7f1531cf0747890860cb5f444054a08aa131c990874d98d7d",
+    "experiments/tpd_clean_v3_screen800_source_lock.json": "9d735db3ad8b6fa0dc10a32afb666c0cd1e9757c61121293c85ed5869020058b"
+  },
+  "policy": {
+    "separate_from_training_source_lock": true,
+    "does_not_modify_frozen_training_results": true,
+    "candidate_null_budget_points_forbidden": true,
+    "unused_frozen_reference_null_points_disclosed": true,
+    "required_gate_reference_null_points_forbidden": true,
+    "automatic_mainline_replacement": false
+  }
+}

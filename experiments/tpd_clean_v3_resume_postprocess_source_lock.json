@@ -1,0 +1,35 @@
+{
+  "schema": "sctransnet_tpd_clean_v3_resume_postprocess_source_lock_v1",
+  "created_at_utc": "2026-07-26T03:45:18+08:00",
+  "recovered_at_utc": "2026-07-26T11:58:33+08:00",
+  "scope": "TPD-Clean-v3 resumed screen800 completion audit, closed-interval candidate sweep recovery, frozen-reference aggregation, marker-last publication, and persistent finalization",
+  "training_source_lock_sha256": "9d735db3ad8b6fa0dc10a32afb666c0cd1e9757c61121293c85ed5869020058b",
+  "resume_source_lock_sha256": "6f28b5999c585e7b0c028a02c7c19d254259938108bd24ecaf3feb3e5fbd702b",
+  "source_sha256": {
+    "experiments/summarize_tpd_clean_v3_screen800.py": "a3094a21338df69e5c74683d9a531b89d0a4cbafcd2568ef54e043a09095280f",
+    "experiments/validate_tpd_clean_v3_completion.py": "898049e56dc852c7bf8aa803055910115ebcce52364fd324d51b173688cce3ec",
+    "experiments/validate_tpd_clean_v3_resume_completion.py": "96e635610e836003c69841756a4f0c0ce70f3be4e9d55c85d688efb6fad31398",
+    "experiments/run_tpd_clean_v3_resume_finalizer.sh": "90ec2bc9009f97e70b2bbc6c96d3c8309fe59c7f2ad4392eee8a33cfad5384b6",
+    "experiments/launch_tpd_clean_v3_resume_finalizer.sh": "d91eae12b5bf07836f038e163e0cb26f56b3e31c377e99aedbb5ee7b5a668d08",
+    "tests/test_summarize_tpd_clean_v3_screen800.py": "4193d4bf54ebba0f05321c8312ee7a309b13720c6c955829d5956e0a3c25cafb",
+    "tests/test_validate_tpd_clean_v3_completion.py": "085743f425970a40a0516eb49ff36d460b85859a5527702b028d323fc56ce7b4",
+    "tests/test_validate_tpd_clean_v3_resume_completion.py": "cf0aea9eb95262dde2fb6189b16bf9089a9d8e839fe27df1a4b5fd4855f4a696",
+    "tests/test_tpd_clean_v3_resume_finalizer.py": "9e6e066d1c1d36eea060eb0a0df44514c9077047e318c9327a589a9f013d24a1",
+    "experiments/TPD_CLEAN_V3_RESUME_2GPU_PROTOCOL.md": "c44f2e9a883314edc0ae2b470860b47fb529fdadafb1ea3ce2b6b984a99aa77a",
+    "experiments/tpd_clean_v3_screen800_source_lock.json": "9d735db3ad8b6fa0dc10a32afb666c0cd1e9757c61121293c85ed5869020058b",
+    "experiments/tpd_clean_v3_resume_2x_source_lock.json": "6f28b5999c585e7b0c028a02c7c19d254259938108bd24ecaf3feb3e5fbd702b",
+    "experiments/TPD_CLEAN_V3_CLOSED_INTERVAL_SWEEP_RECOVERY.md": "8aa12b5519e23bc870099f58fadf06151059af67ec7b5334df07f7528918fdab",
+    "experiments/evaluate_tpd_clean_v3_pd_fa_closed_interval.py": "4c1f2e5423d71326e20921a933be62b8830c1547dbdf6a7a1819e36c85971165",
+    "experiments/audit_tpd_clean_v3_closed_interval_sweeps.py": "f938a5537c491f99482ae0d376a96e8baa0b978e6c29bfa25c24a2f2517d3783",
+    "tests/test_evaluate_tpd_clean_v3_pd_fa_closed_interval.py": "5243ac18eb6f036bafe2ab2e2cf30f8286080fac1f8fef44084de324a963e4c2"
+  },
+  "policy": {
+    "separate_from_training_and_resume_source_locks": true,
+    "does_not_modify_training_or_resume_results": true,
+    "marker_written_last": true,
+    "published_outputs_are_no_overwrite": true,
+    "closed_interval_candidate_sweeps": true,
+    "historical_reference_sweeps_unchanged": true,
+    "automatic_mainline_replacement": false
+  }
+}

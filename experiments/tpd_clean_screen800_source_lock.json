@@ -1,0 +1,22 @@
+{
+  "schema": "sctransnet_tpd_clean_screen800_source_lock_v1",
+  "candidate_family": "spd_anchored_tpd_clean_v2",
+  "source_sha256": {
+    "model/tpd_clean.py": "ca61b4035bc32c99d5862e08c48096e4892e90c0de1d1f3bdf12d683c94597f2",
+    "experiments/train_tpd_clean_v2.py": "b722aec780d5ccc198eff3e08ac5b454630f9e0fd589f40711ef8f8669f37c3b",
+    "experiments/evaluate_tpd_clean_v2_pd_fa.py": "af50e807c1be03522e09e5a524d10e3d77a867da3dc120a0d8a0057026f2442a",
+    "experiments/run_tpd_clean_screen800_4x5090_worker.sh": "b579023902baeda34e1298ad0163b3afb91113b22915d29d4f4aacbcca9ad0f6",
+    "experiments/launch_tpd_clean_screen800_4x5090.sh": "4aef50ada7b9bb59f93f032a88e7c920985e52984f6e670f18222ba91aee9884",
+    "experiments/status_tpd_clean_screen800_4x5090.sh": "e4c414f234dcdc39753d9a1ac1de905db3767bee14e23fd98df7b459c7e2629a",
+    "experiments/TPD_CLEAN_V2_PROTOCOL.md": "42c73d7e47b6e67017de4bc174787cd1bca01a2bcad29414e2bd14c5f7ecf102",
+    "tests/test_tpd_clean.py": "0496fe7a1fd23587bfb7ec22cb65fbad7ca2d7db1100b0b451a14f3923d589ab",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/fingerprint_tpd_training_data.py": "26382e38e899bdf4f97b77c6671929c391decef6e4bf4ac40094a7d4e6b0bc7d",
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/tpd.py": "18a5892edd18ab040e38f18c8d86a02bf3e50b7a4d12d0115ec9a97e8051c135",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596"
+  }
+}

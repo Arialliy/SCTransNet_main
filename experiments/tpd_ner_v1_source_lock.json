@@ -1,0 +1,23 @@
+{
+  "schema": "sctransnet_tpd_ner_v1_source_lock_v1",
+  "candidate": "tpd_clean_full_ner",
+  "source_sha256": {
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_ner_v1_pd_fa.py": "a15d75008c4a2a10ac76412ef17991c8605cd13c70aaca4f5292347b58711124",
+    "experiments/fingerprint_tpd_training_data.py": "26382e38e899bdf4f97b77c6671929c391decef6e4bf4ac40094a7d4e6b0bc7d",
+    "experiments/run_tpd_ner_v1_formal800.sh": "ffb29770f4f509f092b5effa0157aad9ffc406dc777c5cb6905a1986d6a165c7",
+    "experiments/smoke_tpd_ner_v1.py": "ec83b5640a7dab9c944997d3d7169603711f14148301c34d02a8eebbf7a83b49",
+    "experiments/tpd_clean_next_module_gate_v1.json": "8c556cd22de952cb74bf6bbc6e8e97c5bbe7dadc480832e3bf53d4b3dfa84016",
+    "experiments/tpd_ner_runtime.py": "d6f936cf7c7ee011e2fcada3c278ac0a1cb881e4bdb8e14db5523e8822faa213",
+    "experiments/train_tpd_ner_v1.py": "99f2eeeb39d2a092d4a222c55211caa8723b5695eb879f5649e3a8e28a515a50",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/tpd.py": "18a5892edd18ab040e38f18c8d86a02bf3e50b7a4d12d0115ec9a97e8051c135",
+    "model/tpd_clean.py": "ca61b4035bc32c99d5862e08c48096e4892e90c0de1d1f3bdf12d683c94597f2",
+    "model/tpd_relay.py": "ad80f3fcc2013a85d436bb7c4f7007af51752cbb457269c0ca5f327b825f2980",
+    "model/tpd_sctransnet.py": "cf887b55411da8219f32b8c2a5e248b5ffec403f13146a6a1806fec4e1c014af",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13"
+  }
+}

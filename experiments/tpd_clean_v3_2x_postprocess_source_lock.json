@@ -1,0 +1,26 @@
+{
+  "schema": "sctransnet_tpd_clean_v3_2x_postprocess_source_lock_v1",
+  "created_at_utc": "2026-07-25T17:24:01Z",
+  "scope": "TPD-Clean-v3 two-RTX5090 screen800 post-training artifact validation, frozen-reference loading, seven-gate comparison, and persistent finalization",
+  "training_source_lock_sha256": "513012549609431db24a8bfb6b9aa1fc903fd3819cf92b941b423e82a0a89a48",
+  "source_sha256": {
+    "experiments/summarize_tpd_clean_v3_screen800_2x5090.py": "56b6d39fad9162f6416d7a52fc278938ad805b19b7f15f7ed482ef73fee59437",
+    "experiments/validate_tpd_clean_v3_2x_completion.py": "71bd39e8542e0bba9b68ddeefd09d3dc69ef040b2269e6aa23ff030b51e6c935",
+    "experiments/run_tpd_clean_v3_screen800_2x5090_finalizer.sh": "2ea1a0cf9ea728939c95dfd2cf7550bdcaa3640ba4b83a8f66b5fcf6b66f593e",
+    "experiments/launch_tpd_clean_v3_screen800_2x5090_finalizer.sh": "73221c789518465b09044be36fe55fd18bf647b61fa668da6f0aabdc58c230e4",
+    "tests/test_summarize_tpd_clean_v3_screen800_2x5090.py": "698073114107b161a204ded826cf5e9fb1b4bdf0ff82c0facd5022e275b2d862",
+    "tests/test_validate_tpd_clean_v3_2x_completion.py": "2cea6305e413b9ddf09bcbe47ffd276726e7ac0508a95432bcf4a830ee57fde9",
+    "tests/test_tpd_clean_v3_2x_finalizer.py": "acdce3e1ba1779db501d7c65af7930b61e516a26343be23d4b83d742aaa08868",
+    "experiments/TPD_CLEAN_V3_PROTOCOL.md": "af1934a7b4ca49a7f1531cf0747890860cb5f444054a08aa131c990874d98d7d",
+    "experiments/TPD_CLEAN_V3_2GPU_PROTOCOL.md": "d88f0bf7c1b473b44e801f3783ea55a39cf0a084a0a1fe05f0f8dc835a06aafe",
+    "experiments/tpd_clean_v3_screen800_2x_source_lock.json": "513012549609431db24a8bfb6b9aa1fc903fd3819cf92b941b423e82a0a89a48"
+  },
+  "policy": {
+    "separate_from_training_source_lock": true,
+    "does_not_modify_frozen_training_results": true,
+    "candidate_null_budget_points_forbidden": true,
+    "unused_frozen_reference_null_points_disclosed": true,
+    "required_gate_reference_null_points_forbidden": true,
+    "automatic_mainline_replacement": false
+  }
+}

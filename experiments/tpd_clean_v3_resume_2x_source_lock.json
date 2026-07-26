@@ -1,0 +1,41 @@
+{
+  "schema": "sctransnet_tpd_clean_v3_resume_2x_source_lock_v1",
+  "created_at_utc": "2026-07-25T19:42:48Z",
+  "candidate_family": "spd_anchored_tpd_clean_v3_kcs",
+  "scope": "validated in-place continuation of four interrupted TPD-Clean-v3 runs on counterbalanced GPU2/GPU3",
+  "original_training_source_lock_sha256": "9d735db3ad8b6fa0dc10a32afb666c0cd1e9757c61121293c85ed5869020058b",
+  "allowed_gpu_indices": [
+    2,
+    3
+  ],
+  "resume_boundaries": {
+    "tpd_clean_v3_full:42": 279,
+    "tpd_clean_v3_sal_capacity:42": 331,
+    "tpd_clean_v3_full:3407": 323,
+    "tpd_clean_v3_sal_capacity:3407": 372
+  },
+  "resume_gpu_assignments": {
+    "tpd_clean_v3_full:42": "GPU-8d68eb9e-49d3-67f6-f715-6ef2ac4975c3",
+    "tpd_clean_v3_sal_capacity:42": "GPU-4a0f4ab5-9d4e-20d9-4e7a-515e2d4e0562",
+    "tpd_clean_v3_full:3407": "GPU-4a0f4ab5-9d4e-20d9-4e7a-515e2d4e0562",
+    "tpd_clean_v3_sal_capacity:3407": "GPU-8d68eb9e-49d3-67f6-f715-6ef2ac4975c3"
+  },
+  "continuity_policy": {
+    "model_optimizer_scaler_restored": true,
+    "shuffle_crop_flip_stream_replayed": true,
+    "same_process_continuity_claimed": false,
+    "cuda_bitwise_continuity_claimed": false,
+    "original_boundary_snapshots_required": true,
+    "cpu_replay_thread_cap": 1
+  },
+  "source_sha256": {
+    "experiments/resume_tpd_clean_v3.py": "9b7664c39733f439e2eff465b08fa20295bb11c395a8b525fe11105d5d8925f2",
+    "experiments/run_tpd_clean_v3_resume_2x5090_worker.sh": "268e14d2f6cf6f535400f4ad9aba15d4f0acb5a8ec5490138af3cb483a1c8bf8",
+    "experiments/launch_tpd_clean_v3_resume_2x5090.sh": "b8642a9b4beb8e8fe3a31d3c306cab72888a67098f626fdd3251d3fbd2d0db21",
+    "experiments/status_tpd_clean_v3_resume_2x5090.sh": "0ad4953a48f6baab16f2a01b4ee900c797fa8b90e3fb87a131177554721dfa17",
+    "experiments/TPD_CLEAN_V3_RESUME_2GPU_PROTOCOL.md": "c44f2e9a883314edc0ae2b470860b47fb529fdadafb1ea3ce2b6b984a99aa77a",
+    "tests/test_resume_tpd_clean_v3.py": "a7f570a470ada4bbedf5c8c2be3f4a7e188ce6affdb1d0d88c2de2792a3f8c22",
+    "tests/test_tpd_clean_v3_resume_2x_runtime.py": "ffba145d52bd0b847410952dc4d812c04efa42721c636855ff8ee3a828e8a18c",
+    "experiments/tpd_clean_v3_screen800_source_lock.json": "9d735db3ad8b6fa0dc10a32afb666c0cd1e9757c61121293c85ed5869020058b"
+  }
+}
