@@ -1,0 +1,96 @@
+{
+  "candidate_family": "tpd_clean_v7_dch",
+  "dataset": "NUDT-SIRST",
+  "formal_contract": {
+    "amp": false,
+    "cublas_workspace_config": ":4096:8",
+    "epochs": 800,
+    "eps": 1e-06,
+    "eval_every": 1,
+    "initialization_modes": [
+      "fresh",
+      "exact_resume"
+    ],
+    "workers": 0
+  },
+  "frozen_input_count": 0,
+  "frozen_input_sha256": {},
+  "go_decision": {
+    "context_direct_support": false,
+    "dch_causal_mechanism_established": false,
+    "paper_core_established": false,
+    "stability_claim_supported": false,
+    "status": "GO_DCH_TRAJECTORY_TEST"
+  },
+  "lock_kind": "training",
+  "official_training_index": "img_idx/train_NUDT-SIRST.txt",
+  "official_training_sample_count": 663,
+  "policy": {
+    "diagnostic_sources_excluded": true,
+    "existing_lock_overwrite_forbidden": true,
+    "formula_change_after_lock_forbidden": true,
+    "fresh_or_exact_resume_only": true,
+    "gpu0_gpu1_used": false,
+    "lock_scopes_are_separate": true,
+    "native_17_validation_fields_required": true,
+    "official_test_accessed": false,
+    "physical_gpus": [
+      2,
+      3
+    ],
+    "source_symlinks_forbidden": true,
+    "v6_warm_start_forbidden": true
+  },
+  "schema": "sctransnet_tpd_clean_v7_dch_exact_source_lock_v1",
+  "source_count": 24,
+  "source_sha256": {
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "experiments/TPD_CLEAN_V7_DCH_PROTOCOL.md": "535ee85975851210938cdd8754d6d601d3acbf2e5368d2f6e1e30d335080bd7c",
+    "experiments/fingerprint_tpd_training_data.py": "26382e38e899bdf4f97b77c6671929c391decef6e4bf4ac40094a7d4e6b0bc7d",
+    "experiments/launch_tpd_clean_v7_dch_formal800_2x5090.sh": "faf0aabf3cca5a288272a1859e385c7bd5dd6b07f80e2f9e9f14c4fdb5a3b5a8",
+    "experiments/run_tpd_clean_v7_dch_formal800_2x5090_lane.sh": "54ebe39015cee95e97d285630d8f8324114a979e16320f48c2a24df6ec888a39",
+    "experiments/run_tpd_clean_v7_dch_formal800_2x5090_worker.sh": "220982e74065a79f05aa96be8a786774c61b77b238b5f9ac48ae8a1df2647919",
+    "experiments/tpd_exact_epoch_journal.py": "c45406b70142b7073360a1dc26d15e09ad2ac5be32f2eebdbeecea58080c988b",
+    "experiments/tpd_exact_resume.py": "1735112631408257c9c8247acb382e3738e9068d68bcd4686371067429aca04b",
+    "experiments/tpd_exact_runner.py": "b8046a09d9f18c7c95b8394ee73975dc3b7b8b3aa5be247a200dcd12562ba2ea",
+    "experiments/tpd_exact_training_runtime.py": "df54fcd35af1ffcbf9648908fc23197caa7a41272a44b87a82ebd4679075ce20",
+    "experiments/tpd_extension_warm_start.py": "d8b4dca6b9e8b50420ae85cf8097491e491038410fa625b878c01c8fe03b9cbb",
+    "experiments/train_tpd_clean_v6.py": "fc82a32d685f506f9115c94854e72e823745dcf39914a06bc2af552a8fc6ce46",
+    "experiments/train_tpd_clean_v6_exact.py": "05c9a6211f8f6899df294cb2a52510e1ccb14551f602695dcf1b36c71ed1ba76",
+    "experiments/train_tpd_clean_v7_dch.py": "19930057f0965c52289ea5dba6af883266d4f48736b95196d3e3954c467e1554",
+    "experiments/train_tpd_clean_v7_dch_exact.py": "7483eb4eb49ccfffd51d5b708bcc4e5917175ca5b6b51590808e9379476d9fa2",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "experiments/verify_tpd_clean_v7_dch_smoke_reports.py": "2fcee07da30d76144c00b1bf9ba7df641ef5791a9d472eb034bcfb371c1ba199",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/tpd.py": "18a5892edd18ab040e38f18c8d86a02bf3e50b7a4d12d0115ec9a97e8051c135",
+    "model/tpd_clean_v6.py": "22cec7b67b5f6b726366ae4b349f85fa09101896465f1bf8467ea6fbd76d90ab",
+    "model/tpd_clean_v7_dch.py": "a6d4052ef9fd2b68e11dbeb515439551715f9a1d52a7189f0cc169a3ccee4f86",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13",
+    "warmup_scheduler.py": "d7ebc3f9568ebd2da6b141d2923dba22c70d523099320e8aee5e769426b62493"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "validation_fields": [
+    "val_loss",
+    "miou",
+    "niou",
+    "pixel_precision",
+    "pixel_recall",
+    "pixel_f1",
+    "pd",
+    "tiny_pd",
+    "fa",
+    "false_objects_per_image",
+    "target_count",
+    "matched_target_count",
+    "tiny_target_count",
+    "matched_tiny_target_count",
+    "predicted_object_count",
+    "unmatched_predicted_object_count",
+    "valid_pixel_count"
+  ],
+  "variants": [
+    "tpd_clean_v7_dch_full",
+    "tpd_clean_v7_dch_capacity"
+  ]
+}

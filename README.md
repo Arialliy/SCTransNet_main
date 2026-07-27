@@ -6,9 +6,59 @@ patch embedding 的目标保真下采样（Target-Preserving Downsampling, TPD�
 解码器、损失函数和输出接口保持不变，以便进行受控比较。
 
 > 当前结论来自 **NUDT-SIRST 官方训练集的内部验证划分**，未访问官方测试集。
-> 最新 TPD-Clean-v6 正式实验使用两个随机种子，但仍不足以形成跨数据集稳定性结论。
+> TPD-Clean-v6 与 V7-DCH 正式实验均使用两个随机种子，但仍不足以形成跨数据集
+> 稳定性结论。
 
-## 最新状态：TPD-Clean-v6
+## 最新状态：TPD-Clean V7-DCH
+
+V6 的正式实验表明目标保真主线存在局部潜力，但固定阈值质量、跨种子稳定性和
+相对等容量对照优势均未通过预注册门槛。后续冻结诊断发现：V6 Full 与 Capacity
+在零 Saliency scale 处输出相同，但第一次优化的梯度并不相同。V7-DCH
+（Deferred Context Headroom）因此将零点加强为输出与一阶优化同时等价的锚点，
+只延迟 Context 对 Saliency 学习轨迹的影响，不改变 K/C/S 三源、参数量、主干网络、
+损失函数、数据划分或评估协议。
+
+V7-DCH 使用如下 Context headroom：
+
+```text
+a = tanh(saliency_scale)
+H = 1 + |a|(1-|a|)V
+output = Keep + Saliency_aligned × a × H
+```
+
+其中 `V` 是空间零均值、有界的 Context modulation。等容量对照固定 `H=1`。
+Full 与 Capacity 的参数量均为 10,843,155。
+
+### V7-DCH 当前正式训练结果
+
+四组 fresh、FP32、800-epoch 任务均已完成，使用 seed `42/3407` 和同一
+530/133 内部划分：
+
+| Seed | 变体 | 检查点 | Epoch | Pd | tiny-Pd | Fa ↓ | mIoU ↑ |
+|---:|---|---|---:|---:|---:|---:|---:|
+| 42 | V7-DCH Full | Pd-primary | 414 | 187/189 | 39/39 | 9.1782e-7 | 0.929930 |
+| 42 | V7-DCH Full | mIoU-primary | 694 | 187/189 | 39/39 | 2.6387e-6 | 0.939580 |
+| 42 | Capacity | Pd-primary | 181 | 188/189 | 39/39 | 6.8722e-5 | 0.805532 |
+| 42 | Capacity | mIoU-primary | 416 | 186/189 | 38/39 | 5.7364e-7 | 0.939605 |
+| 3407 | V7-DCH Full | Pd-primary | 212 | 187/189 | 39/39 | 1.5259e-5 | 0.849535 |
+| 3407 | V7-DCH Full | mIoU-primary | 557 | 183/189 | 38/39 | 3.3271e-6 | 0.923745 |
+| 3407 | Capacity | Pd-primary | 522 | 186/189 | 39/39 | 1.0325e-6 | 0.928052 |
+| 3407 | Capacity | mIoU-primary | 518 | 184/189 | 38/39 | 6.8837e-7 | 0.929850 |
+
+这些数值来自各 run 的 `summary.json`，只是固定阈值检查点结果。V7 的 closed
+Pd–Fa sweeps、Gate A–E 汇总、Mechanism Audit M 和最终 decision 尚未形成当前
+权威发布链；一份中间 comparison 已因 acceptance 文档顺序问题归档为
+superseded evidence。因此当前不得将 V7 描述为“通过门槛”“修复机制”或
+“改变主线”。在完整 finalizer 产物通过校验之前，V6 的
+`ENGINEERING_GATE_FAIL` 仍是最近一次有效正式裁决。
+
+V7-DCH 实现与冻结协议：
+
+- [`model/tpd_clean_v7_dch.py`](model/tpd_clean_v7_dch.py)
+- [`experiments/TPD_CLEAN_V7_DCH_PROTOCOL.md`](experiments/TPD_CLEAN_V7_DCH_PROTOCOL.md)
+- [`SCTransNet_TPD_V7_DCH_失败分析与不改主线修改计划.md`](SCTransNet_TPD_V7_DCH_失败分析与不改主线修改计划.md)
+
+## 已完成裁决：TPD-Clean-v6
 
 在初代 TPD 筛选实验之后，本仓库进一步实现了 TPD-Clean-v6。V6 仍只替换
 SCTransNet 的两个浅层 patch embedding，不改变 backbone、SCTB、decoder、
@@ -186,9 +236,12 @@ python3 -m unittest discover -s tests
 model/tpd.py                         # TPD、SPD 和 Progressive embedding
 model/tpd_clean_v6.py                # TPD-Clean-v6 与等容量对照
 model/tpd_clean_v7.py                # 后续 V7 实验实现
+model/tpd_clean_v7_dch.py            # V7 Deferred Context Headroom
 experiments/train_tpd_pilot.py       # 无官方测试泄漏的统一训练 runner
 experiments/train_tpd_clean_v6_exact.py
                                      # V6 精确续训正式入口
+experiments/train_tpd_clean_v7_dch_exact.py
+                                     # V7-DCH 精确续训正式入口
 experiments/evaluate_pd_fa_sweep.py  # Pd–Fa threshold sweep
 experiments/summarize_tpd_pd_fa.py   # Pd–Fa 汇总
 experiments/decide_tpd_mainline_4x5090.py
@@ -225,7 +278,8 @@ tests/                                # 模块与决策策略测试
 
 ## 结果边界
 
-README 中的初代 TPD 结果为 seed-42 内部验证实验，TPD-Clean-v6 结果为
-seed `42/3407` 内部验证实验。它们均不等同于 NUDT-SIRST 官方测试成绩，
-也不构成跨数据集稳定性结论。V6 的正式工程门槛裁决为失败；不得将局部优点描述成
-稳定优越性。任何后续论文级声明都应建立在多种子、多数据集和独立官方测试结果之上。
+README 中的初代 TPD 结果为 seed-42 内部验证实验，TPD-Clean-v6 与 V7-DCH
+结果为 seed `42/3407` 内部验证实验。它们均不等同于 NUDT-SIRST 官方测试成绩，
+也不构成跨数据集稳定性结论。V6 的正式工程门槛裁决为失败；V7-DCH 当前只有训练
+完成事实，尚无有效最终裁决。不得将局部优点描述成稳定优越性。任何后续论文级声明
+都应建立在完整审计、多种子、多数据集和独立官方测试结果之上。

@@ -1,0 +1,133 @@
+{
+  "candidate_family": "tpd_clean_v7_dch",
+  "formal_contract": {
+    "amp": false,
+    "cublas_workspace_config": ":4096:8",
+    "epochs": 800,
+    "eps": 1e-06,
+    "eval_every": 1,
+    "initialization_modes": [
+      "fresh",
+      "exact_resume"
+    ],
+    "workers": 0
+  },
+  "frozen_input_count": 12,
+  "frozen_input_sha256": {
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/V6_FAILURE_ATLAS.json": "6ed938a7e9e7652df24ec1ebe9cc0c680458e20d0547c7cffc2e7c8d897a1317",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/V6_FAILURE_ATLAS.md": "8c9e979474898a29c3b32918bdaf55cdd8f6706111944168764825e6e7046c76",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu2_full/matrix_summary.json": "0e0276ef89323d1b9c553549e9b8afcb3b09c7c176e3d465e47ae6c41c8b3170",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu2_full/tpd_clean_v6_full/seed_3407/miou_primary.json": "fe309647c14bcc1bb9618250adc5b7b7c8344650097380a37a10b454abc8c0da",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu2_full/tpd_clean_v6_full/seed_3407/pd_primary.json": "5da5b595db095d7b1175a31e92df9bd47768dd4cc97f05d8331139d31909833c",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu2_full/tpd_clean_v6_full/seed_42/miou_primary.json": "f7c2795cf8b0b94d85371fd4ded922216903367bd1c183b420697de1901ce3ed",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu2_full/tpd_clean_v6_full/seed_42/pd_primary.json": "e4f67e4928919093d3d8075bac8c3ed5c29ab0a2808e97586e54fb9b8e9e673c",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu3_capacity/matrix_summary.json": "9769cff4011f0d88f20d2df122b6387efc7d51ed7fb367d453c86b90ceb7621f",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu3_capacity/tpd_clean_v6_phase_capacity/seed_3407/miou_primary.json": "bd6dafeb5e200debe046d87c0a197edfe77de0fd54b6129e31cdcc79a54217bc",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu3_capacity/tpd_clean_v6_phase_capacity/seed_3407/pd_primary.json": "29f65cb53e758b0b0bdfc7ec63449d635c67a65cb39b4f57726d68359409da07",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu3_capacity/tpd_clean_v6_phase_capacity/seed_42/miou_primary.json": "1f2c383f893f0fe2fba99ddf61a2bdd33a13ffa2999806bb122735b23628483f",
+    "analysis/results/tpd_clean_v6_frozen_failure_atlas_v1/gpu3_capacity/tpd_clean_v6_phase_capacity/seed_42/pd_primary.json": "752675d0617b249564fa6f9cee8ec43fae7c8c24a201b8bb0827cf3b605c1a20"
+  },
+  "go_decision": {
+    "context_direct_support": false,
+    "dch_causal_mechanism_established": false,
+    "paper_core_established": false,
+    "stability_claim_supported": false,
+    "status": "GO_DCH_TRAJECTORY_TEST"
+  },
+  "lock_kind": "diagnostic",
+  "policy": {
+    "existing_lock_overwrite_forbidden": true,
+    "formal_gate_replacement": false,
+    "formula_change_after_lock_forbidden": true,
+    "frozen_counterfactual_is_training_trajectory": false,
+    "lock_scopes_are_separate": true,
+    "official_test_accessed": false,
+    "source_symlinks_forbidden": true,
+    "training_performed": false
+  },
+  "schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v2",
+  "source_count": 18,
+  "source_sha256": {
+    "analysis/diagnose_tpd_clean_v6_fragmentation.py": "98d584794a8fcf4d04352615c235fb88a7238323a59c59e1834d17cf8dd09a09",
+    "analysis/summarize_tpd_clean_v6_failure_atlas.py": "91bb2dda053f47e18c83f4887254a05a9106b8e2e4b7872f55a88be216f858bf",
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+    "experiments/freeze_tpd_clean_v7_dch_source_locks.py": "002689e8aa9becfad064dc35829e1e7eac1449ae45732f58e158b35cde555b1f",
+    "experiments/summarize_tpd_clean_v6_formal800.py": "c4db8a218295b02569b8f7da3092c163229a6538e77882e826a4989a748c5dca",
+    "experiments/train_tpd_clean_v6.py": "fc82a32d685f506f9115c94854e72e823745dcf39914a06bc2af552a8fc6ce46",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/tpd.py": "18a5892edd18ab040e38f18c8d86a02bf3e50b7a4d12d0115ec9a97e8051c135",
+    "model/tpd_clean_v6.py": "22cec7b67b5f6b726366ae4b349f85fa09101896465f1bf8467ea6fbd76d90ab",
+    "tests/test_diagnose_tpd_clean_v6_fragmentation.py": "f320d38dae97ba209366ec29780266f01caca92828e4def3cf5b551cb0e6d4f1",
+    "tests/test_summarize_tpd_clean_v6_failure_atlas.py": "37c135b9ecfb4a0629fc204a72837a3d7ba63ba9d498b6e221b1c8dfa6c3efd9",
+    "tests/test_tpd_clean_v7_dch_source_locks.py": "0cbf057ccb772914bb53f7c138a87f6290097b29662bb697c7fbe678ff04b15b",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13",
+    "warmup_scheduler.py": "d7ebc3f9568ebd2da6b141d2923dba22c70d523099320e8aee5e769426b62493"
+  },
+  "superseded_lock_evidence": [
+    {
+      "accepted_as_current": false,
+      "evidence_error": null,
+      "expected_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v1",
+      "expected_sha256": "5f99bb511cb140cd502dcf41329f698b338d41e7404e6f897cf84ce3ab241a92",
+      "observed_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v1",
+      "predecessor_chain_evidence": [
+        {
+          "accepted_as_current": false,
+          "evidence_error": null,
+          "evidence_role": "archived_diagnostic_lock",
+          "expected_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v1",
+          "expected_sha256": "edd670631f8e058e82d7bdddd68a21b1de46a1d3b02a35ae6fa7e2de22734695",
+          "observed_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v1",
+          "present": true,
+          "relative_path": "experiments/tpd_clean_v7_dch_diagnostic_source_lock_superseded_before_acceptance_v2.json",
+          "sha256": "edd670631f8e058e82d7bdddd68a21b1de46a1d3b02a35ae6fa7e2de22734695"
+        },
+        {
+          "accepted_as_current": false,
+          "evidence_error": null,
+          "evidence_role": "diagnostic_supersession_record",
+          "expected_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_supersession_v1",
+          "expected_sha256": "86512d73fc6aa0bb8ebbf38b272392a55f56c0667af0d534f4bb0f4927a4219b",
+          "observed_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_supersession_v1",
+          "present": true,
+          "relation_verified": true,
+          "relative_path": "experiments/tpd_clean_v7_dch_diagnostic_source_lock_supersession_acceptance_v2.json",
+          "sha256": "86512d73fc6aa0bb8ebbf38b272392a55f56c0667af0d534f4bb0f4927a4219b"
+        }
+      ],
+      "present": true,
+      "relative_path": "experiments/tpd_clean_v7_dch_diagnostic_source_lock.json",
+      "sha256": "5f99bb511cb140cd502dcf41329f698b338d41e7404e6f897cf84ce3ab241a92",
+      "superseded": true,
+      "superseded_by_relative_path": "experiments/tpd_clean_v7_dch_diagnostic_source_lock_v2.json",
+      "superseded_by_schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v2"
+    }
+  ],
+  "validation_fields": [
+    "val_loss",
+    "miou",
+    "niou",
+    "pixel_precision",
+    "pixel_recall",
+    "pixel_f1",
+    "pd",
+    "tiny_pd",
+    "fa",
+    "false_objects_per_image",
+    "target_count",
+    "matched_target_count",
+    "tiny_target_count",
+    "matched_tiny_target_count",
+    "predicted_object_count",
+    "unmatched_predicted_object_count",
+    "valid_pixel_count"
+  ],
+  "variants": [
+    "tpd_clean_v7_dch_full",
+    "tpd_clean_v7_dch_capacity"
+  ]
+}

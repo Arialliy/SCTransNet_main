@@ -1,0 +1,21 @@
+{
+  "schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_supersession_v1",
+  "reason": "The shared source-lock freezer and its governance tests changed for the acceptance v2 transition; both files are members of the unchanged diagnostic source set.",
+  "default_path_changed": false,
+  "schema_changed": false,
+  "source_set_changed": false,
+  "current": {
+    "relative_path": "experiments/tpd_clean_v7_dch_diagnostic_source_lock.json",
+    "schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v1",
+    "sha256": "5f99bb511cb140cd502dcf41329f698b338d41e7404e6f897cf84ce3ab241a92",
+    "source_count": 18
+  },
+  "superseded": {
+    "relative_path": "experiments/tpd_clean_v7_dch_diagnostic_source_lock_superseded_before_acceptance_v2.json",
+    "schema": "sctransnet_tpd_clean_v7_dch_diagnostic_source_lock_v1",
+    "sha256": "edd670631f8e058e82d7bdddd68a21b1de46a1d3b02a35ae6fa7e2de22734695",
+    "source_count": 18,
+    "accepted_as_current": false
+  },
+  "training_lock_changed": false
+}
