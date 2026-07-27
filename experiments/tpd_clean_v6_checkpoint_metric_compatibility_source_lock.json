@@ -1,0 +1,51 @@
+{
+  "base_evaluator_sha256": {
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f"
+  },
+  "candidate_root": "experiments/results/tpd_clean_v6_formal800_2x5090_v1",
+  "frozen_lock_paths": {
+    "postprocess_source_lock": "experiments/tpd_clean_v6_postprocess_source_lock.json",
+    "supplemental_acceptance_source_lock": "experiments/tpd_clean_v6_supplemental_acceptance_source_lock.json",
+    "training_source_lock": "experiments/tpd_clean_v6_exact_source_lock.json"
+  },
+  "frozen_lock_sha256": {
+    "postprocess_source_lock": "3cfbfda891d823c5b97d2d1a2364790c823fac9a548bbf0987444979619bd827",
+    "supplemental_acceptance_source_lock": "dcaf2f1b32cff5096511ba090e3149327deea1f32f2a51d4d866bb0d0cf32696",
+    "training_source_lock": "2de1a8f75deb321b5aec4cf5dfa6bc16df8443e858e1d48a3ab6bea34de526d2"
+  },
+  "policy": {
+    "audit_supplement_is_in_memory_only": true,
+    "base_evaluator_artifact_digest_preserved": true,
+    "checkpoint_rewrite_forbidden": true,
+    "direct_wrapper_requires_frozen_arguments": true,
+    "formal_inference_replays_training_environment": true,
+    "formal_runner_requires_cuda": true,
+    "metrics_rewrite_forbidden": true,
+    "non_strict_numeric_delta_limits": {
+      "miou": 0.0,
+      "val_loss": 1e-07
+    },
+    "old_acceptance_runs_before_compatibility_acceptance": true,
+    "original_checkpoint_validation_metrics_preserved": true,
+    "raw_fixed_audit_preserved_before_normalization": true,
+    "shared_postprocess_lock_required": true,
+    "sweep_overwrite_forbidden": true,
+    "sweep_task_metric_points_preserved": true,
+    "sweep_val_loss_normalized_to_checkpoint": true
+  },
+  "schema": "sctransnet_tpd_clean_v6_checkpoint_metric_compatibility_source_lock_v1",
+  "scope": "Post-freeze in-memory checkpoint-metric audit compatibility, eight-sweep runner, read-only validation, and final acceptance",
+  "source_count": 9,
+  "source_sha256": {
+    "experiments/accept_tpd_clean_v6_formal800_checkpoint_compat_results.py": "5703ff1feaec070fc8f0851061e7b12537fd120d0a3e7b3b058643fb88887c95",
+    "experiments/evaluate_tpd_clean_v6_pd_fa_checkpoint_compat.py": "d40469f8f3d3c78c79e3b909946a3d070207869da22e0d8eb41ce124e135163c",
+    "experiments/freeze_tpd_clean_v6_checkpoint_metric_compatibility_source_lock.py": "38b51809bc042af28aa7abbd15cfa6b72733149a2e1e9910896c4b491978bdc8",
+    "experiments/run_tpd_clean_v6_formal800_checkpoint_compat_sweeps.py": "f137762cacf60faba1b49d08b23f5eb3239fdeeee397fa9652e0c6216c9eb3a1",
+    "experiments/validate_tpd_clean_v6_checkpoint_compatibility.py": "e16af72d75d989f29241659b9d34dae7357ee4ec21874c8541cf934f7f56535a",
+    "tests/test_evaluate_tpd_clean_v6_pd_fa_checkpoint_compat.py": "9b6f0a4940ca46a904ec4c7d9ba09ef716df0001d1565064291c1b37f3d6c82c",
+    "tests/test_freeze_tpd_clean_v6_checkpoint_metric_compatibility_source_lock.py": "5a14f1e0a4113c45be95102e96bcc46e59e84b89367d2f21453de495b741e2c6",
+    "tests/test_run_tpd_clean_v6_formal800_checkpoint_compat_sweeps.py": "e257256832dad45c66a504b5855549b6da3f095bcb6ce0c72db21170f6fcf8c1",
+    "tests/test_validate_tpd_clean_v6_checkpoint_compatibility.py": "9b4cdb743f22bf1d220f7ce0549e6f8e888671559678c3f13a2ca53bee3e69e7"
+  }
+}

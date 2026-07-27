@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Training entry for the isolated TPD-Clean-v6 candidates.
+"""Thin training entry for phase-resolved TPD-Clean-v7 candidates.
 
-V6 keeps the established Keep--Context--Saliency tokenization mainline.  This
-thin entry only builds the paired Full/phase-capacity models and delegates the
-inherited training loop to :mod:`experiments.train_tpd_pilot`; importing or
-creating this module never launches training.
+V7 changes only the Saliency alignment inside the established
+Keep--Context--Saliency tokenizer.  It replaces ``mtc.embeddings_1/2`` and
+delegates the inherited optimization loop to ``train_tpd_pilot``.  Importing
+or building this module never launches training.
 """
 
 from __future__ import annotations
@@ -20,45 +20,47 @@ if str(REPO_ROOT) not in sys.path:
 
 from experiments import train_tpd_pilot as base  # noqa: E402
 from model.SCTransNet import SCTransNet  # noqa: E402
-from model.tpd_clean_v6 import (  # noqa: E402
-    PRIMARY_CLEAN_V6_VARIANT,
-    SUPPORTED_CLEAN_V6_VARIANTS,
-    clean_v6_variant_spec,
+from model.tpd_clean_v7 import (  # noqa: E402
+    PRIMARY_CLEAN_V7_VARIANT,
+    SUPPORTED_CLEAN_V7_VARIANTS,
+    clean_v7_variant_spec,
     parameter_count,
-    replace_shallow_embeddings_clean_v6,
+    replace_shallow_embeddings_clean_v7,
 )
 
 
 TOTAL_PARAMETERS = 10_843_155
 SHALLOW_EMBEDDING_PARAMETERS = 66_176
-PHASE_TIED_PROJECTION_FORMULA = (
-    "Wt[o,c]=sum_p(Wk[o,4c+p]),p=0..3"
+CONTEXT_PROJECTION_FORMULA = "Wt[o,c]=sum_p(Wk[o,c,p]),p=TL,TR,BL,BR"
+PHASE_RESOLVED_SALIENCY_FORMULA = (
+    "Z=PixelUnshuffle2(X);C0=AvgPool2(X);D_p=ReLU(Z_p-C0);"
+    "Sa[o]=sum_c,p(Wk[o,c,p]*D[c,p])"
 )
 CONTEXT_CODE_FORMULA = (
     "Q=tanh((Ca-mean_hw(Ca))/"
     "sqrt(mean_hw((Ca-mean_hw(Ca))^2)+eps));eps=1e-6;"
-    "V=0.5*(Q-mean_hw(Q))"
+    "V=g*0.5*(Q-mean_hw(Q))"
 )
-FULL_HEADROOM_FORMULA = "H=1+0.5*(1-abs(a))*V"
-CAPACITY_HEADROOM_FORMULA = "H=1"
+FULL_HEADROOM_FORMULA = "g=1;H=1+0.5*(1-abs(a))*V"
+CAPACITY_HEADROOM_FORMULA = "g=0;H=1"
 FUSION_FORMULA = "K+Sa*(a*H),a=tanh(saliency_scale)"
 
 
-def build_clean_v6_model(
+def build_clean_v7_model(
     variant: str,
     seed: int,
 ) -> Tuple[SCTransNet, Dict[str, Any]]:
-    """Build SCTransNet with only ``mtc.embeddings_1/2`` replaced by V6."""
+    """Build SCTransNet with only shallow embeddings replaced by V7."""
 
     variant = variant.lower()
-    spec = clean_v6_variant_spec(variant)
+    spec = clean_v7_variant_spec(variant)
     base.seed_everything(seed)
     model = SCTransNet(base.get_SCTrans_config(), mode="train", deepsuper=True)
     model.apply(base.weights_init_kaiming)
-    replacements = replace_shallow_embeddings_clean_v6(model, variant)
+    replacements = replace_shallow_embeddings_clean_v7(model, variant)
     if set(replacements) != {"embeddings_1", "embeddings_2"}:
         raise RuntimeError(
-            "TPD-Clean-v6 must replace only embeddings_1 and embeddings_2"
+            "TPD-Clean-v7 must replace only embeddings_1 and embeddings_2"
         )
     for replacement in replacements.values():
         replacement.apply(base.weights_init_kaiming)
@@ -69,18 +71,18 @@ def build_clean_v6_model(
     total_parameters = parameter_count(model)
     if total_parameters != TOTAL_PARAMETERS:
         raise RuntimeError(
-            "TPD-Clean-v6 total parameter count mismatch: "
+            "TPD-Clean-v7 total parameter count mismatch: "
             f"{total_parameters} != {TOTAL_PARAMETERS}"
         )
     if shallow_parameters != SHALLOW_EMBEDDING_PARAMETERS:
         raise RuntimeError(
-            "TPD-Clean-v6 shallow parameter count mismatch: "
+            "TPD-Clean-v7 shallow parameter count mismatch: "
             f"{shallow_parameters} != {SHALLOW_EMBEDDING_PARAMETERS}"
         )
 
-    primary = variant == PRIMARY_CLEAN_V6_VARIANT
+    primary = variant == PRIMARY_CLEAN_V7_VARIANT
     if bool(spec["primary_candidate"]) is not primary:
-        raise RuntimeError("TPD-Clean-v6 primary-candidate metadata mismatch")
+        raise RuntimeError("TPD-Clean-v7 primary-candidate metadata mismatch")
     metadata = {
         "variant": variant,
         "variant_spec": dict(spec),
@@ -93,17 +95,27 @@ def build_clean_v6_model(
             "fourth_parallel_branch_added"
         ],
         "replaced_embeddings": ("mtc.embeddings_1", "mtc.embeddings_2"),
+        "only_model_change_from_v6": "phase_resolved_saliency_alignment",
+        "context_and_keep_paths_match_v6": True,
         "context_modulates_saliency_only": True,
         "context_reference": spec["context_reference"],
         "context_code": spec["context_code"],
+        "context_gate": spec["context_gate"],
         "context_modulation": spec["context_modulation"],
         "context_headroom": spec["context_headroom"],
         "fusion_support": spec["fusion_support"],
-        "phase_tied_projection": spec["phase_tied_projection"],
-        "phase_tied_projection_formula": PHASE_TIED_PROJECTION_FORMULA,
+        "phase_order": spec["phase_order"],
         "pixel_unshuffle_channel_order": spec[
             "pixel_unshuffle_channel_order"
         ],
+        "context_projection": spec["context_projection"],
+        "context_projection_formula": CONTEXT_PROJECTION_FORMULA,
+        "saliency_representation": spec["saliency_representation"],
+        "saliency_formula": spec["saliency_formula"],
+        "saliency_projection": spec["saliency_projection"],
+        "phase_resolved_saliency_formula": (
+            PHASE_RESOLVED_SALIENCY_FORMULA
+        ),
         "derived_projection_parameters": 0,
         "derived_projection_buffers": 0,
         "context_code_formula": CONTEXT_CODE_FORMULA,
@@ -124,6 +136,7 @@ def build_clean_v6_model(
         "residual_bound": "abs(R)<=abs(Sa)",
         "zero_saliency_reference": "R=0",
         "zero_scale_reference": spec["zero_scale_reference"],
+        "state_compatible_with": spec["state_compatible_with"],
         "projection_precision": "float32_in_formal_amp_off_path",
         "context_precision": "float32_in_formal_amp_off_path",
         "coefficient_precision": "float32_in_formal_amp_off_path",
@@ -145,8 +158,8 @@ def build_clean_v6_model(
 
 
 def main() -> None:
-    base.SUPPORTED_VARIANTS = SUPPORTED_CLEAN_V6_VARIANTS
-    base.build_model = build_clean_v6_model
+    base.SUPPORTED_VARIANTS = SUPPORTED_CLEAN_V7_VARIANTS
+    base.build_model = build_clean_v7_model
     base.main()
 
 

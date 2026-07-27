@@ -6,7 +6,52 @@ patch embedding 的目标保真下采样（Target-Preserving Downsampling, TPD�
 解码器、损失函数和输出接口保持不变，以便进行受控比较。
 
 > 当前结论来自 **NUDT-SIRST 官方训练集的内部验证划分**，未访问官方测试集。
-> 正式实验仅使用一个随机种子，因此不能据此声称 TPD 已稳定优于所有对照。
+> 最新 TPD-Clean-v6 正式实验使用两个随机种子，但仍不足以形成跨数据集稳定性结论。
+
+## 最新状态：TPD-Clean-v6
+
+在初代 TPD 筛选实验之后，本仓库进一步实现了 TPD-Clean-v6。V6 仍只替换
+SCTransNet 的两个浅层 patch embedding，不改变 backbone、SCTB、decoder、
+损失函数或数据协议。它使用 Keep 投影权重派生 Context/Saliency 的共享输出坐标，
+并通过空间零均值、幅值有界的 Context 增益图调制 Saliency residual。
+
+V6 正式实验包含以下两种等容量变体，每种均训练 seed `42` 和 `3407`：
+
+| 变体 | 说明 |
+|---|---|
+| `tpd_clean_v6_full` | 相位绑定 K/C/S 融合与 Context headroom 调制 |
+| `tpd_clean_v6_phase_capacity` | 相同参数量与相位投影，但固定 `H=1` 的容量对照 |
+
+四组任务均完成 800 epochs。12 个检查点可严格加载，8 份闭区间 Pd–Fa sweep、
+固定阈值复算、source lock、精确续训日志以及 CPU/RTX 5090 smoke 均通过；
+工程完整性 Gate E 通过。
+
+### V6 固定阈值结果
+
+| Seed | 变体 | 检查点 | Pd | Fa ↓ | mIoU ↑ |
+|---:|---|---|---:|---:|---:|
+| 42 | V6 Full | Pd-primary | **188/189** | 1.4915e-6 | 0.922945 |
+| 42 | V6 Full | mIoU-primary | 187/189 | 1.7209e-6 | **0.940544** |
+| 42 | Capacity | Pd-primary | **188/189** | 6.8722e-5 | 0.805532 |
+| 42 | Capacity | mIoU-primary | 186/189 | **5.7364e-7** | 0.939605 |
+| 3407 | V6 Full | Pd-primary | **187/189** | 4.8415e-5 | 0.860967 |
+| 3407 | V6 Full | mIoU-primary | 185/189 | 1.0325e-6 | 0.924459 |
+| 3407 | Capacity | Pd-primary | 186/189 | 1.0325e-6 | **0.928052** |
+| 3407 | Capacity | mIoU-primary | 184/189 | **6.8837e-7** | **0.929850** |
+
+正式裁决为 **`ENGINEERING_GATE_FAIL`**：
+
+- Gate A（seed 42 固定阈值质量）未通过；
+- Gate B（seed 42 预注册 Fa budgets）通过；
+- Gate C（seed 3407 稳定性）未通过；
+- Gate D（Full 相对等容量对照）未通过；
+- Gate E（工程与证据完整性）通过。
+
+因此 V6 不授权进入 NER 正式实验，也不改变既有主线结论。seed 42 显示出局部收益，
+但 seed 3407 明显退化，且部分工作点被等容量对照覆盖。完整协议见
+[`experiments/TPD_CLEAN_V6_PROTOCOL.md`](experiments/TPD_CLEAN_V6_PROTOCOL.md)，
+整体技术与创新性复核见
+[`SCTransNet_TPD_V6_整体设计正确性与创新性评估.md`](SCTransNet_TPD_V6_整体设计正确性与创新性评估.md)。
 
 ## 方法
 
@@ -28,7 +73,7 @@ TPD 将每个 2× 下采样单元拆成三个对齐分支：
 | `spd` | `pixel_unshuffle + 1×1` 的 SPD 对照 |
 | `tpd` | 相位保留、上下文和显著性三分支融合 |
 
-## 正式实验设置
+## 初代 TPD 正式实验设置
 
 - 数据集：NUDT-SIRST
 - 数据范围：仅官方训练集，共 663 张图像
@@ -45,7 +90,7 @@ TPD 将每个 2× 下采样单元拆成三个对齐分支：
 800 epochs，事件流、检查点角色、模型严格加载、指标恒等式及 Pd–Fa sweep
 均通过完整性检查。
 
-## 实验结果
+## 初代 TPD 实验结果
 
 ### Pd 主指标检查点
 
@@ -139,7 +184,11 @@ python3 -m unittest discover -s tests
 
 ```text
 model/tpd.py                         # TPD、SPD 和 Progressive embedding
+model/tpd_clean_v6.py                # TPD-Clean-v6 与等容量对照
+model/tpd_clean_v7.py                # 后续 V7 实验实现
 experiments/train_tpd_pilot.py       # 无官方测试泄漏的统一训练 runner
+experiments/train_tpd_clean_v6_exact.py
+                                     # V6 精确续训正式入口
 experiments/evaluate_pd_fa_sweep.py  # Pd–Fa threshold sweep
 experiments/summarize_tpd_pd_fa.py   # Pd–Fa 汇总
 experiments/decide_tpd_mainline_4x5090.py
@@ -176,6 +225,7 @@ tests/                                # 模块与决策策略测试
 
 ## 结果边界
 
-README 中的新增结果均为本仓库的 seed-42 内部验证实验。它们不等同于 NUDT-SIRST
-官方测试成绩，也不构成跨数据集稳定性结论。为了避免误读，任何后续论文级声明都应
-建立在多种子、多数据集和独立官方测试结果之上。
+README 中的初代 TPD 结果为 seed-42 内部验证实验，TPD-Clean-v6 结果为
+seed `42/3407` 内部验证实验。它们均不等同于 NUDT-SIRST 官方测试成绩，
+也不构成跨数据集稳定性结论。V6 的正式工程门槛裁决为失败；不得将局部优点描述成
+稳定优越性。任何后续论文级声明都应建立在多种子、多数据集和独立官方测试结果之上。

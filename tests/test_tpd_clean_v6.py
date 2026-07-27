@@ -77,7 +77,7 @@ class TPDCleanV6Tests(unittest.TestCase):
         for spec in (full, control):
             self.assertEqual(
                 spec["candidate_family"],
-                "spd_anchored_tpd_clean_v6_phase_tied_mean_neutral_kcs",
+                "spd_anchored_tpd_clean_v6_phase_tied_kcs_zero_mean_gain",
             )
             self.assertEqual(spec["mainline_contract"], "Keep-Context-Saliency")
             self.assertEqual(

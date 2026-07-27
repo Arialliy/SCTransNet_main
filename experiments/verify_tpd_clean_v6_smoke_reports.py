@@ -1,0 +1,570 @@
+#!/usr/bin/env python3
+"""Verify the frozen CPU/GPU2/GPU3 TPD-Clean-v6 smoke-report set."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import math
+import sys
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from experiments import capture_tpd_clean_v6_smoke_report as capture  # noqa: E402
+from experiments.smoke_tpd_clean_v6 import (  # noqa: E402
+    EXPECTED_BLOCK_EPS_NAMES,
+    EXPECTED_DEVICE_NAME,
+    EXPECTED_KEEP_PARAMETER_NAMES,
+    EXPECTED_SCALE_PARAMETER_NAMES,
+    FORMAL_EPS,
+    PHYSICAL_GPU_UUIDS,
+    SCHEMA as SMOKE_SCHEMA,
+)
+from experiments.train_tpd_clean_v6 import (  # noqa: E402
+    CONTEXT_CODE_FORMULA,
+    FUSION_FORMULA,
+    PHASE_TIED_PROJECTION_FORMULA,
+)
+from model.tpd_clean_v6 import SUPPORTED_CLEAN_V6_VARIANTS  # noqa: E402
+
+
+SCHEMA = "sctransnet_tpd_clean_v6_smoke_verification_v1"
+PRIMARY_VARIANT = "tpd_clean_v6_full"
+CONTROL_VARIANT = "tpd_clean_v6_phase_capacity"
+EXPECTED_REPORTS: Mapping[str, Mapping[str, Any]] = {
+    "cpu_all.json": {
+        "device": "cpu",
+        "device_name": "cpu",
+        "physical_index": None,
+        "device_uuid": None,
+        "batch_size": 2,
+        "patch_size": 32,
+        "variants": list(SUPPORTED_CLEAN_V6_VARIANTS),
+        "paired": True,
+        "paired_status": "verified",
+    },
+    "gpu2_full.json": {
+        "device": "cuda:0",
+        "device_name": EXPECTED_DEVICE_NAME,
+        "physical_index": "2",
+        "device_uuid": PHYSICAL_GPU_UUIDS["2"],
+        "batch_size": 2,
+        "patch_size": 64,
+        "variants": [PRIMARY_VARIANT],
+        "paired": None,
+        "paired_status": "not_checked_single_variant",
+    },
+    "gpu3_capacity.json": {
+        "device": "cuda:0",
+        "device_name": EXPECTED_DEVICE_NAME,
+        "physical_index": "3",
+        "device_uuid": PHYSICAL_GPU_UUIDS["3"],
+        "batch_size": 2,
+        "patch_size": 64,
+        "variants": [CONTROL_VARIANT],
+        "paired": None,
+        "paired_status": "not_checked_single_variant",
+    },
+}
+class SmokeReportError(RuntimeError):
+    """Raised when a persisted V6 smoke artifact violates the contract."""
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SmokeReportError(message)
+
+
+def _is_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+
+
+def _positive_mapping(
+    value: Any,
+    expected_names: frozenset[str],
+    label: str,
+) -> None:
+    _require(isinstance(value, dict), f"{label}: expected mapping")
+    _require(set(value) == set(expected_names), f"{label}: names differ")
+    _require(
+        all(_is_number(item) and float(item) > 0.0 for item in value.values()),
+        f"{label}: values must be finite and positive",
+    )
+
+
+def _sha256(value: Any, label: str) -> str:
+    _require(isinstance(value, str) and len(value) == 64, f"{label}: SHA256")
+    _require(
+        all(character in "0123456789abcdef" for character in value),
+        f"{label}: SHA256",
+    )
+    return value
+
+
+def _load_json(path: Path, label: str) -> dict[str, Any]:
+    _require(path.is_file() and not path.is_symlink(), f"{label}: missing file")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SmokeReportError(f"{label}: invalid JSON: {exc}") from exc
+    _require(isinstance(payload, dict), f"{label}: expected object")
+    return payload
+
+
+def _validate_timestamp(value: Any, label: str) -> None:
+    _require(isinstance(value, str), f"{label}: timestamp")
+    try:
+        parsed = dt.datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise SmokeReportError(f"{label}: timestamp") from exc
+    _require(parsed.tzinfo is not None, f"{label}: timestamp must include timezone")
+
+
+def _validate_cuda_contract(
+    report: Mapping[str, Any],
+    expected: Mapping[str, Any],
+    label: str,
+) -> None:
+    contract = report.get("cuda_device_contract")
+    _require(isinstance(contract, dict), f"{label}: CUDA contract")
+    physical_index = expected["physical_index"]
+    if physical_index is None:
+        _require(report.get("cuda_visible_devices") is None, f"{label}: CPU mask")
+        _require(
+            contract
+            == {
+                "applicable": False,
+                "validated": False,
+                "declared_physical_index": None,
+                "expected_physical_index": None,
+                "logical_device": None,
+                "visible_device_count": None,
+                "device_name": None,
+                "expected_device_name": None,
+                "device_uuid": None,
+                "expected_device_uuid": None,
+            },
+            f"{label}: CPU CUDA contract",
+        )
+        return
+    expected_uuid = expected["device_uuid"]
+    _require(
+        report.get("environment_cuda_visible_devices") == physical_index
+        and report.get("cuda_visible_devices") == physical_index,
+        f"{label}: physical mask",
+    )
+    _require(contract.get("applicable") is True, f"{label}: CUDA applicable")
+    _require(contract.get("validated") is True, f"{label}: CUDA validation")
+    _require(
+        contract.get("declared_physical_index") == physical_index
+        and contract.get("expected_physical_index") == physical_index,
+        f"{label}: physical index",
+    )
+    _require(contract.get("logical_device") == "cuda:0", f"{label}: logical GPU")
+    _require(
+        contract.get("visible_device_count") == 1,
+        f"{label}: visible GPU count",
+    )
+    _require(
+        contract.get("device_name") == EXPECTED_DEVICE_NAME
+        and contract.get("expected_device_name") == EXPECTED_DEVICE_NAME,
+        f"{label}: GPU model",
+    )
+    _require(
+        contract.get("device_uuid") == expected_uuid
+        and contract.get("expected_device_uuid") == expected_uuid,
+        f"{label}: GPU UUID",
+    )
+
+
+def _validate_variant(
+    entry: Mapping[str, Any],
+    expected_variant: str,
+    label: str,
+) -> str:
+    _require(entry.get("variant") == expected_variant, f"{label}: variant")
+    _require(entry.get("status") == "complete", f"{label}: status")
+    _require(entry.get("output_count") == 6, f"{label}: output count")
+    _require(entry.get("loss_head_count") == 6, f"{label}: loss heads")
+    _require(
+        entry.get("loss_definition") == "sum_of_six_mean_bce_outputs"
+        and entry.get("loss_sum_verified") is True,
+        f"{label}: loss definition",
+    )
+    _require(
+        entry.get("optimizer_steps_completed") == 2,
+        f"{label}: optimizer steps",
+    )
+    losses = entry.get("losses")
+    per_head = entry.get("per_head_losses")
+    _require(
+        isinstance(losses, list)
+        and len(losses) == 2
+        and all(_is_number(value) for value in losses),
+        f"{label}: total losses",
+    )
+    _require(
+        isinstance(per_head, list)
+        and len(per_head) == 2
+        and all(
+            isinstance(row, list)
+            and len(row) == 6
+            and all(_is_number(value) for value in row)
+            for row in per_head
+        ),
+        f"{label}: per-head losses",
+    )
+    for step_index, (total, row) in enumerate(zip(losses, per_head), start=1):
+        _require(
+            math.isclose(
+                float(total),
+                math.fsum(float(value) for value in row),
+                rel_tol=1e-6,
+                abs_tol=1e-6,
+            ),
+            f"{label}: step {step_index} total loss differs from six-head sum",
+        )
+
+    _require(
+        entry.get("scale_parameter_names")
+        == sorted(EXPECTED_SCALE_PARAMETER_NAMES),
+        f"{label}: scale-name record",
+    )
+    _require(
+        entry.get("keep_parameter_names")
+        == sorted(EXPECTED_KEEP_PARAMETER_NAMES),
+        f"{label}: Keep-name record",
+    )
+    _positive_mapping(
+        entry.get("scale_gradient_l1"),
+        EXPECTED_SCALE_PARAMETER_NAMES,
+        f"{label}: scale gradients",
+    )
+    _positive_mapping(
+        entry.get("scale_update_l1"),
+        EXPECTED_SCALE_PARAMETER_NAMES,
+        f"{label}: scale updates",
+    )
+    _positive_mapping(
+        entry.get("phase_gradient_l1"),
+        EXPECTED_KEEP_PARAMETER_NAMES,
+        f"{label}: Keep gradients",
+    )
+    _positive_mapping(
+        entry.get("phase_update_l1"),
+        EXPECTED_KEEP_PARAMETER_NAMES,
+        f"{label}: Keep updates",
+    )
+
+    _require(entry.get("step_zero_exact_spd") is True, f"{label}: step-zero SPD")
+    _require(entry.get("strict_rebuild_load") is True, f"{label}: strict load")
+    _require(
+        entry.get("strict_reload_max_abs_difference") == 0.0,
+        f"{label}: strict output reload",
+    )
+    _require(entry.get("total_parameters") == 10_843_155, f"{label}: parameters")
+    _require(
+        entry.get("shallow_embedding_parameters") == 66_176,
+        f"{label}: shallow parameters",
+    )
+    _require(
+        entry.get("phase_tied_projection")
+        == "sum_keep_weights_over_four_contiguous_phases",
+        f"{label}: tied projection",
+    )
+    _require(
+        entry.get("derived_projection_parameters") == 0,
+        f"{label}: derived parameters",
+    )
+
+    block_eps = entry.get("block_eps")
+    _require(isinstance(block_eps, dict), f"{label}: block eps")
+    _require(set(block_eps) == set(EXPECTED_BLOCK_EPS_NAMES), f"{label}: eps names")
+    _require(
+        all(value == FORMAL_EPS for value in block_eps.values()),
+        f"{label}: eps values",
+    )
+    _require(entry.get("formal_eps") == FORMAL_EPS, f"{label}: formal eps")
+    _require(entry.get("amp_enabled") is False, f"{label}: AMP")
+    _require(
+        entry.get("autocast_forced_disabled") is True,
+        f"{label}: autocast",
+    )
+    _require(entry.get("input_dtype") == "torch.float32", f"{label}: input dtype")
+    _require(entry.get("target_dtype") == "torch.float32", f"{label}: target dtype")
+    _require(
+        entry.get("output_dtypes") == ["torch.float32"],
+        f"{label}: output dtype",
+    )
+    _require(
+        entry.get("model_parameter_dtypes") == ["torch.float32"],
+        f"{label}: parameter dtype",
+    )
+    _require(
+        entry.get("model_floating_buffer_dtypes") in ([], ["torch.float32"]),
+        f"{label}: buffer dtype",
+    )
+    for key in ("projection_precision", "context_precision", "coefficient_precision"):
+        _require(
+            entry.get(key) == "float32_in_formal_amp_off_path",
+            f"{label}: {key}",
+        )
+    _require(
+        entry.get("residual_output_dtype") == "feature_dtype",
+        f"{label}: residual dtype",
+    )
+    if expected_variant == PRIMARY_VARIANT:
+        _require(
+            entry.get("context_modulation") == "half_centered_context_code",
+            f"{label}: Full context",
+        )
+    else:
+        _require(
+            entry.get("context_modulation") == "zero",
+            f"{label}: Capacity context",
+        )
+    _sha256(entry.get("trained_model_checksum"), f"{label}: trained checksum")
+    return _sha256(
+        entry.get("initial_model_checksum"),
+        f"{label}: initial checksum",
+    )
+
+
+def _validate_report(
+    report: Mapping[str, Any],
+    expected: Mapping[str, Any],
+    label: str,
+) -> set[str]:
+    _require(
+        report.get("schema") == SMOKE_SCHEMA
+        and report.get("status") == "complete",
+        f"{label}: smoke schema/status",
+    )
+    _require(report.get("device") == expected["device"], f"{label}: device")
+    _require(
+        report.get("device_name") == expected["device_name"],
+        f"{label}: device name",
+    )
+    _require(
+        report.get("batch_size") == expected["batch_size"]
+        and report.get("patch_size") == expected["patch_size"],
+        f"{label}: batch/patch size",
+    )
+    _require(
+        report.get("steps") == 2 and report.get("seed") == 42,
+        f"{label}: steps/seed",
+    )
+    _require(
+        report.get("loss_head_count") == 6
+        and report.get("loss_definition") == "sum_of_six_mean_bce_outputs",
+        f"{label}: top-level loss contract",
+    )
+    _require(report.get("formal_eps") == FORMAL_EPS, f"{label}: formal eps")
+    _require(report.get("formal_amp_enabled") is False, f"{label}: formal AMP")
+    _require(
+        report.get("autocast_forced_disabled") is True,
+        f"{label}: formal autocast",
+    )
+    _require(
+        report.get("input_dtype") == "torch.float32"
+        and report.get("target_dtype") == "torch.float32",
+        f"{label}: formal dtype",
+    )
+    _require(
+        report.get("scale_parameter_names")
+        == sorted(EXPECTED_SCALE_PARAMETER_NAMES)
+        and report.get("keep_parameter_names")
+        == sorted(EXPECTED_KEEP_PARAMETER_NAMES),
+        f"{label}: frozen parameter names",
+    )
+    _require(
+        report.get("phase_tied_projection_formula")
+        == PHASE_TIED_PROJECTION_FORMULA
+        and report.get("context_code_formula") == CONTEXT_CODE_FORMULA
+        and report.get("fusion_equation") == FUSION_FORMULA,
+        f"{label}: formula contract",
+    )
+    _require(
+        report.get("paired_initialization") is expected["paired"]
+        and report.get("paired_initialization_status")
+        == expected["paired_status"],
+        f"{label}: pairing status",
+    )
+    if expected["paired"] is True:
+        _sha256(
+            report.get("paired_initialization_sha256"),
+            f"{label}: paired checksum",
+        )
+    else:
+        _require(
+            report.get("paired_initialization_sha256") is None,
+            f"{label}: single-variant pairing checksum",
+        )
+    _validate_cuda_contract(report, expected, label)
+
+    variants = report.get("variants")
+    expected_variants = expected["variants"]
+    _require(isinstance(variants, list), f"{label}: variant list")
+    _require(
+        [entry.get("variant") for entry in variants] == expected_variants,
+        f"{label}: ordered variant matrix",
+    )
+    initial_checksums = {
+        _validate_variant(
+            entry,
+            expected_variant,
+            f"{label}/{expected_variant}",
+        )
+        for entry, expected_variant in zip(variants, expected_variants)
+    }
+    if expected["paired"] is True:
+        _require(len(initial_checksums) == 1, f"{label}: paired checksums")
+        _require(
+            report.get("paired_initialization_sha256")
+            == next(iter(initial_checksums)),
+            f"{label}: paired checksum record",
+        )
+
+    cuda_memory = report.get("cuda_memory")
+    if expected["device"] == "cpu":
+        _require(cuda_memory is None, f"{label}: CPU CUDA memory")
+    else:
+        _require(
+            isinstance(cuda_memory, dict)
+            and set(cuda_memory)
+            == {"peak_allocated_mib", "peak_reserved_mib"}
+            and all(
+                _is_number(value) and float(value) > 0.0
+                for value in cuda_memory.values()
+            ),
+            f"{label}: CUDA memory",
+        )
+    return initial_checksums
+
+
+def validate_smoke_reports(smoke_root: Path) -> dict[str, Any]:
+    smoke_root = smoke_root.resolve()
+    _require(smoke_root.is_dir(), "smoke root is not a directory")
+    observed_json = {
+        path.name
+        for path in smoke_root.iterdir()
+        if path.suffix == ".json"
+    }
+    _require(
+        observed_json == set(EXPECTED_REPORTS),
+        "smoke root must contain exactly cpu_all.json, "
+        "gpu2_full.json, and gpu3_capacity.json",
+    )
+    current_sources = capture.source_manifest()
+    initial_checksums: set[str] = set()
+    report_sha256: dict[str, str] = {}
+
+    for name, expected in EXPECTED_REPORTS.items():
+        path = smoke_root / name
+        envelope = _load_json(path, f"smoke/{name}")
+        _require(
+            envelope.get("schema") == capture.SCHEMA
+            and envelope.get("status") == "complete",
+            f"smoke/{name}: persisted schema/status",
+        )
+        _validate_timestamp(
+            envelope.get("created_at_utc"),
+            f"smoke/{name}",
+        )
+        _require(
+            envelope.get("source_sha256") == current_sources,
+            f"smoke/{name}: source manifest differs",
+        )
+        for role, source_path in capture.SOURCE_PATHS.items():
+            relative = str(source_path.relative_to(REPO_ROOT))
+            _require(
+                envelope.get(f"{role}_source_sha256")
+                == current_sources[relative],
+                f"smoke/{name}: {role} source digest",
+            )
+        report = envelope.get("report")
+        _require(isinstance(report, dict), f"smoke/{name}: report missing")
+        _require(
+            envelope.get("environment_cuda_visible_devices")
+            == report.get("environment_cuda_visible_devices")
+            and envelope.get("cuda_visible_devices")
+            == report.get("cuda_visible_devices")
+            and envelope.get("cuda_device_contract")
+            == report.get("cuda_device_contract"),
+            f"smoke/{name}: CUDA envelope binding",
+        )
+        initial_checksums.update(
+            _validate_report(report, expected, f"smoke/{name}")
+        )
+        report_sha256[name] = capture.file_sha256(path)
+
+    _require(
+        len(initial_checksums) == 1,
+        "the CPU/GPU2/GPU3 reports do not share one initial checksum",
+    )
+    return {
+        "schema": SCHEMA,
+        "status": "complete",
+        "verified_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "smoke_root": str(smoke_root),
+        "expected_report_names": sorted(EXPECTED_REPORTS),
+        "report_sha256": report_sha256,
+        "source_sha256": current_sources,
+        "cross_report_initialization_verified": True,
+        "paired_initialization_sha256": next(iter(initial_checksums)),
+        "physical_gpu_reports_verified": {
+            "2": PHYSICAL_GPU_UUIDS["2"],
+            "3": PHYSICAL_GPU_UUIDS["3"],
+        },
+        "passed": True,
+    }
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Verify the exact V6 CPU/GPU2/GPU3 smoke-report set"
+    )
+    parser.add_argument("--smoke-root", type=Path, required=True)
+    parser.add_argument("--output", type=Path, default=None)
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    args = parse_args(argv)
+    result = validate_smoke_reports(args.smoke_root)
+    if args.output is None:
+        print(
+            json.dumps(
+                result,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+                allow_nan=False,
+            ),
+            flush=True,
+        )
+        return
+    output = (
+        args.output
+        if args.output.is_absolute()
+        else REPO_ROOT / args.output
+    )
+    capture.exclusive_write_json(output, result)
+    print(
+        f"TPDCLEANV6_SMOKE_REPORT_SET_OK output={output}",
+        flush=True,
+    )
+
+
+if __name__ == "__main__":
+    main()

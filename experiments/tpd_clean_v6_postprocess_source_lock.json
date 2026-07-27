@@ -1,0 +1,44 @@
+{
+  "candidate_root": "experiments/results/tpd_clean_v6_formal800_2x5090_v1",
+  "evaluator_sha256": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+  "frozen_reference_sha256": {
+    "experiments/results/tpd_clean_v6_preflight_v1/smoke_reports/cpu_all.json": "50f377a8622181be0b388bbf0cdb8e3830275e805f8e5b62a3891f2ad4d6722f",
+    "experiments/results/tpd_clean_v6_preflight_v1/smoke_reports/gpu2_full.json": "d7f75ee1d756f53480bc459966a5f4c6f2ea74b73265bf764bb41b489c53b1af",
+    "experiments/results/tpd_clean_v6_preflight_v1/smoke_reports/gpu3_capacity.json": "361b858eaf068d7005ba93a0b3b06f1856628c9d28bcc46aab0d3db234d7496f",
+    "experiments/results/tpd_clean_v6_preflight_v1/v6_smoke_verification.json": "3084c5f23c28903bc8dec2aadf5fee0eaf08db7ed96acfc30ba4ecf3a71ff779",
+    "experiments/results/tpd_pe_formal800_4x5090_v1/NUDT-SIRST/spd/seed_42_formal800_pd_fp32_4x5090_v1/best.pth.tar": "d0cb2af30dc298e8529c6a35619fd14dd1c2660ab18eafe0ccfbea20ab26e2bd",
+    "experiments/results/tpd_pe_formal800_4x5090_v1/NUDT-SIRST/spd/seed_42_formal800_pd_fp32_4x5090_v1/metrics.jsonl": "93aab51bffd42f027e3384f01d23dddebe90b85af21f159bce29ae19c0de7db6",
+    "experiments/results/tpd_pe_formal800_4x5090_v1/NUDT-SIRST/spd/seed_42_formal800_pd_fp32_4x5090_v1/pd_fa_sweep_best.pth.json": "e8b7b5f2431e78eaefc46e8019a0e3a8ac5b649227028af1b926e252286bae95",
+    "experiments/results/tpd_pe_formal800_4x5090_v1/NUDT-SIRST/spd/seed_42_formal800_pd_fp32_4x5090_v1/protocol.json": "529de72a2e2ade43b1f543356f70bf20a139b588c56d94755394e42861a96efc",
+    "experiments/results/tpd_pe_formal800_4x5090_v1/NUDT-SIRST/spd/seed_42_formal800_pd_fp32_4x5090_v1/split.json": "27c3b4a30c680af1c16493f723ce9713cb7e6987dcbc82e72fe1331cff12cd6b",
+    "experiments/results/tpd_pe_formal800_4x5090_v1/NUDT-SIRST/spd/seed_42_formal800_pd_fp32_4x5090_v1/summary.json": "900a92e266fc121af21229e33ab3dedc5aad3ef5c861bbe71f62c9007740b70c"
+  },
+  "policy": {
+    "automatic_mainline_replacement": false,
+    "candidate_null_budget_points_forbidden": true,
+    "does_not_modify_frozen_training_sources": true,
+    "does_not_modify_training_results": true,
+    "formal_report_overwrite_forbidden": true,
+    "gate_evaluation_before_four_complete_runs_forbidden": true,
+    "separate_from_training_source_lock": true
+  },
+  "schema": "sctransnet_tpd_clean_v6_postprocess_source_lock_v1",
+  "scope": "TPD-Clean-v6 formal800 closed-interval sweeps, Gates A-E, and exact-input completion publication",
+  "source_sha256": {
+    "experiments/freeze_tpd_clean_v6_postprocess_source_lock.py": "569f723d6076a6f3d184e31efa0e02834d1491b023a423982b367671e0dbbf5b",
+    "experiments/launch_tpd_clean_v6_formal800_finalizer.sh": "ebe1bbe9de3242f17826b7cbe6827017be2b476a7a98e171656ac8552b5f0a12",
+    "experiments/run_tpd_clean_v6_formal800_finalizer.sh": "9f7eebba457dc36049a74c58fcb604c1950d77ad2a6f5848cc37904d15ed4b77",
+    "experiments/run_tpd_clean_v6_formal800_sweeps.py": "d4c64fc70508d55f3bd96df70b3549f07945f1117e3018ec7598a191e6e3a1ad",
+    "experiments/status_tpd_clean_v6_formal800_finalizer.sh": "76cf5fab1c85a2ce927405d89305e66510a37437b54621f65bfc22f3773937cf",
+    "experiments/summarize_tpd_clean_v6_formal800.py": "c4db8a218295b02569b8f7da3092c163229a6538e77882e826a4989a748c5dca",
+    "experiments/validate_tpd_clean_v6_formal800_completion.py": "c4881ad4aa6d7332fa216c2c8be0cd4405606e9f180922792101df9114a8371b",
+    "tests/test_freeze_tpd_clean_v6_postprocess_source_lock.py": "61422b638d20fa85396c4b570848fce4f3a75f2d050dfc5863a5fbacd00296af",
+    "tests/test_run_tpd_clean_v6_formal800_sweeps.py": "7558b09124cadacc46f3a1370757f259da5012f291f727a7c26fa3c2e14b9755",
+    "tests/test_summarize_tpd_clean_v6_formal800.py": "1d559213a3dfe0db642095d56b2533937efc7f021dab63f8a959f6b0c5b9d0ce",
+    "tests/test_tpd_clean_v6_formal800_finalizer.py": "7377325a3329f96a2f47adcd5231b55451ca9e60888c9eb2e2f3278bb09a7978",
+    "tests/test_validate_tpd_clean_v6_formal800_completion.py": "b34312fc4c8f5e453ec5f29aa3b95ad49b3a23d68ee79033923f79bd93700f50"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "training_source_lock": "experiments/tpd_clean_v6_exact_source_lock.json",
+  "training_source_lock_sha256": "2de1a8f75deb321b5aec4cf5dfa6bc16df8443e858e1d48a3ab6bea34de526d2"
+}

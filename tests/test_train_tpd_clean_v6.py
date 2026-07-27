@@ -133,7 +133,7 @@ class TrainTPDCleanV6Tests(unittest.TestCase):
                 for output, expected in zip(outputs, expected_outputs):
                     self.assertTrue(torch.equal(output, expected))
 
-    def test_metadata_records_phase_tied_mean_neutral_kcs_formula(
+    def test_metadata_records_phase_tied_zero_mean_gain_kcs_formula(
         self,
     ) -> None:
         full = self.metadata["tpd_clean_v6_full"]
@@ -160,7 +160,10 @@ class TrainTPDCleanV6Tests(unittest.TestCase):
         self.assertEqual(control["context_headroom"], "neutral_one")
         self.assertEqual(
             full["context_code"],
-            "phase_aligned_centered_spatial_rms_tanh_fp32",
+            (
+                "phase_aligned_centered_spatial_rms_eps_tanh_"
+                "formal_amp_off_fp32"
+            ),
         )
         self.assertEqual(
             control["context_code"],
@@ -180,7 +183,7 @@ class TrainTPDCleanV6Tests(unittest.TestCase):
         for item in (full, control):
             self.assertEqual(
                 item["candidate_family"],
-                "spd_anchored_tpd_clean_v6_phase_tied_mean_neutral_kcs",
+                "spd_anchored_tpd_clean_v6_phase_tied_kcs_zero_mean_gain",
             )
             self.assertEqual(item["mainline_contract"], "Keep-Context-Saliency")
             self.assertEqual(
@@ -212,7 +215,15 @@ class TrainTPDCleanV6Tests(unittest.TestCase):
                 item["context_code_formula"],
                 CONTEXT_CODE_FORMULA,
             )
-            self.assertTrue(item["mean_neutral_context"])
+            self.assertEqual(
+                item["context_modulation_spatial_mean"],
+                "zero_up_to_fp32_roundoff",
+            )
+            self.assertEqual(
+                item["context_headroom_spatial_mean"],
+                "one_up_to_fp32_roundoff",
+            )
+            self.assertFalse(item["residual_mean_preserving"])
             self.assertEqual(item["fusion_equation"], FUSION_FORMULA)
             self.assertEqual(item["learned_scales_per_block"], 1)
             self.assertEqual(
@@ -224,9 +235,18 @@ class TrainTPDCleanV6Tests(unittest.TestCase):
             self.assertEqual(item["residual_bound"], "abs(R)<=abs(Sa)")
             self.assertEqual(item["zero_saliency_reference"], "R=0")
             self.assertEqual(item["zero_scale_reference"], "dense_spd_exact")
-            self.assertEqual(item["projection_precision"], "float32")
-            self.assertEqual(item["context_precision"], "float32")
-            self.assertEqual(item["coefficient_precision"], "float32")
+            self.assertEqual(
+                item["projection_precision"],
+                "float32_in_formal_amp_off_path",
+            )
+            self.assertEqual(
+                item["context_precision"],
+                "float32_in_formal_amp_off_path",
+            )
+            self.assertEqual(
+                item["coefficient_precision"],
+                "float32_in_formal_amp_off_path",
+            )
             self.assertEqual(item["residual_output_dtype"], "feature_dtype")
 
     def test_no_projection_parameters_fourth_branch_relay_or_hooks(self) -> None:

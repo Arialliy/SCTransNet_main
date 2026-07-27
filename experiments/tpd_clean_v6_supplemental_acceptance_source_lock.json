@@ -1,0 +1,23 @@
+{
+  "schema": "sctransnet_tpd_clean_v6_supplemental_acceptance_source_lock_v1",
+  "created_at": "2026-07-27",
+  "purpose": "Bind the read-only complete-threshold-grid, point-identity, and two-layer final acceptance checks without modifying the frozen training or postprocess sources.",
+  "training_source_lock_sha256": "2de1a8f75deb321b5aec4cf5dfa6bc16df8443e858e1d48a3ab6bea34de526d2",
+  "postprocess_source_lock_sha256": "3cfbfda891d823c5b97d2d1a2364790c823fac9a548bbf0987444979619bd827",
+  "source_count": 4,
+  "source_sha256": {
+    "experiments/accept_tpd_clean_v6_formal800_results.py": "1b66b93bf96f3b2fd6f0ff902265dbc966d7aaa2ec8517e7f45aa728b4d0fe31",
+    "experiments/validate_tpd_clean_v6_strict_sweeps.py": "690aeb536504692048a31e3dd419ac4d6c5664a6deaf318d8adb963de27a2b86",
+    "tests/test_accept_tpd_clean_v6_formal800_results.py": "87a751b51a5120591f45aaee92ccbf977e02bcd1e4b5a56916517b69b4c9da34",
+    "tests/test_validate_tpd_clean_v6_strict_sweeps.py": "6bd67f264bf20f1a1c9fa770589d7ec06db59af14a646aec5da172e9733b45c5"
+  },
+  "acceptance_contract": {
+    "frozen_completion_verification_required": true,
+    "strict_sweep_matrix_required": "8/8",
+    "complete_registered_threshold_union_required": true,
+    "tiny_pd_count_identity_required": true,
+    "authoritative_entry": "experiments/accept_tpd_clean_v6_formal800_results.py verify",
+    "gpu_inference": false,
+    "writes_experiment_artifacts": false
+  }
+}

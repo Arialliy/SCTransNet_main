@@ -1,0 +1,61 @@
+{
+  "dataset": "NUDT-SIRST",
+  "formal_contract": {
+    "amp": false,
+    "cublas_workspace_config": ":4096:8",
+    "epochs": 800,
+    "eps": 1e-06,
+    "eval_every": 1,
+    "initialization_modes": [
+      "fresh",
+      "exact_resume"
+    ],
+    "workers": 0
+  },
+  "official_training_index": "img_idx/train_NUDT-SIRST.txt",
+  "official_training_sample_count": 663,
+  "schema": "sctransnet_tpd_clean_v6_exact_source_lock_v1",
+  "source_sha256": {
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "experiments/TPD_CLEAN_V6_PROTOCOL.md": "8f5215b02f29b79b68d738f5128ab90483896b21446e13cb1e38f2549a33ccf2",
+    "experiments/capture_tpd_clean_v6_smoke_report.py": "49cb39f9e9dfe06eb78094c7e05383f9b2c72700360bb10d8257f7c7774205f7",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+    "experiments/fingerprint_tpd_training_data.py": "26382e38e899bdf4f97b77c6671929c391decef6e4bf4ac40094a7d4e6b0bc7d",
+    "experiments/freeze_tpd_clean_v6_exact_source_lock.py": "c78d25e0cf6dd4fca072c671e43972ba3384c6a8b2ef1ba8765e725ed7e78d41",
+    "experiments/launch_tpd_clean_v6_formal800_2x5090.sh": "5fb51eb7ba7bc9c948e57d2e64bb3e5d1c2ba6ae2bf6abe39a7a2946f3b6e6c7",
+    "experiments/run_tpd_clean_v6_formal800_2x5090_lane.sh": "b087dfc770899bf863d5bd95631b54d413bacda234c102963e03a48bcd71dd99",
+    "experiments/run_tpd_clean_v6_formal800_2x5090_worker.sh": "5c2ed48b4772fed489395790714166b0c72f0b65fa900ac7032ec366d4f36b97",
+    "experiments/smoke_tpd_clean_v6.py": "56b5cf188d4c2047a63bde392ffe6faa64753f8c902b5e2d2d1d8cfa67291f16",
+    "experiments/status_tpd_clean_v6_formal800_2x5090.sh": "d6b76d1b99e170c837ff2e0c90537cf25b66fbc9be9b98ac67f705dcea124192",
+    "experiments/tpd_exact_epoch_journal.py": "c45406b70142b7073360a1dc26d15e09ad2ac5be32f2eebdbeecea58080c988b",
+    "experiments/tpd_exact_resume.py": "1735112631408257c9c8247acb382e3738e9068d68bcd4686371067429aca04b",
+    "experiments/tpd_exact_runner.py": "b8046a09d9f18c7c95b8394ee73975dc3b7b8b3aa5be247a200dcd12562ba2ea",
+    "experiments/tpd_exact_training_runtime.py": "df54fcd35af1ffcbf9648908fc23197caa7a41272a44b87a82ebd4679075ce20",
+    "experiments/tpd_extension_warm_start.py": "d8b4dca6b9e8b50420ae85cf8097491e491038410fa625b878c01c8fe03b9cbb",
+    "experiments/train_tpd_clean_v6.py": "fc82a32d685f506f9115c94854e72e823745dcf39914a06bc2af552a8fc6ce46",
+    "experiments/train_tpd_clean_v6_exact.py": "05c9a6211f8f6899df294cb2a52510e1ccb14551f602695dcf1b36c71ed1ba76",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "experiments/verify_tpd_clean_v6_smoke_reports.py": "1b27b840d2bbdf71ddf609c54db561d25ec2e51389f2dca1ed2f0bf9a44f114a",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/tpd.py": "18a5892edd18ab040e38f18c8d86a02bf3e50b7a4d12d0115ec9a97e8051c135",
+    "model/tpd_clean_v6.py": "22cec7b67b5f6b726366ae4b349f85fa09101896465f1bf8467ea6fbd76d90ab",
+    "tests/test_evaluate_tpd_clean_v6_pd_fa.py": "caf6b6e3a69a9f49fd6d4c1c59ebda58ba8bfc934e27eda8cfa8eb791942e077",
+    "tests/test_freeze_tpd_clean_v6_exact_source_lock.py": "bcf3009b49cedee5c64354069d74813407bbfcea065d5769b9714776e3fa5542",
+    "tests/test_smoke_tpd_clean_v6.py": "7911b136712fa9e1df9f4e0f199c46334cb77652826f1f13c35038c07eb1346e",
+    "tests/test_tpd_clean_v6.py": "b714602be38270dd83d73927b07a67fd8c76c971efb410f7eb7e5f6b3de1ea3f",
+    "tests/test_tpd_clean_v6_2x_runtime.py": "5fea5360cf17bcaf58a8a7278c4f5e7a1079b39553f82bdac44f7dc79878048c",
+    "tests/test_tpd_exact_runner.py": "4c2d4c61afcce319d02313151c5c1721d2201bff3542121d5a79311c3ddacaa7",
+    "tests/test_train_tpd_clean_v6.py": "cddc17735ba01fbd23f5138491afef23099fd27d3cea8cf321570984a70639d5",
+    "tests/test_train_tpd_clean_v6_exact.py": "048f2a6b14540da876ae0f87287f0547b108bd14129a193ded88fc53f6c1720c",
+    "tests/test_verify_tpd_clean_v6_smoke_reports.py": "077386c85bc606f18f546967aeb75eeaa6d536e8fcf911b7a629a6333ba9498a",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13",
+    "warmup_scheduler.py": "d7ebc3f9568ebd2da6b141d2923dba22c70d523099320e8aee5e769426b62493"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "variants": [
+    "tpd_clean_v6_full",
+    "tpd_clean_v6_phase_capacity"
+  ]
+}
