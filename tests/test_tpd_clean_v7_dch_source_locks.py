@@ -45,10 +45,10 @@ def make_tiny_dataset(root: Path) -> Path:
 
 
 class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
-    def test_current_governance_is_diagnostic_v2_acceptance_v3(self) -> None:
+    def test_current_governance_is_diagnostic_v3_acceptance_v4(self) -> None:
         self.assertEqual(
             subject.SCHEMAS["diagnostic"],
-            subject.DIAGNOSTIC_SOURCE_LOCK_SCHEMA_V2,
+            subject.DIAGNOSTIC_SOURCE_LOCK_SCHEMA_V3,
         )
         self.assertEqual(
             subject.SCHEMAS["training"],
@@ -56,7 +56,7 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         )
         self.assertEqual(
             subject.DEFAULT_LOCK_RELATIVES["diagnostic"],
-            "experiments/tpd_clean_v7_dch_diagnostic_source_lock_v2.json",
+            "experiments/tpd_clean_v7_dch_diagnostic_source_lock_v3.json",
         )
         self.assertEqual(
             subject.DEFAULT_LOCK_RELATIVES["training"],
@@ -64,11 +64,11 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         )
         self.assertEqual(
             subject.SCHEMAS["acceptance"],
-            subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V3,
+            subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V4,
         )
         self.assertEqual(
             subject.DEFAULT_LOCK_RELATIVES["acceptance"],
-            "experiments/tpd_clean_v7_dch_acceptance_source_lock_v3.json",
+            "experiments/tpd_clean_v7_dch_acceptance_source_lock_v4.json",
         )
         self.assertEqual(
             subject.SUPERSEDED_ACCEPTANCE_LOCK_RELATIVE,
@@ -100,9 +100,19 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
             subject.DIAGNOSTIC_SUPERSESSION_RECORD_SHA256,
         )
         self.assertTrue(chain[1]["relation_verified"])
+        diagnostic_v2 = subject.superseded_diagnostic_v2_lock_evidence()
+        self.assertEqual(
+            diagnostic_v2["observed_schema"],
+            subject.DIAGNOSTIC_SOURCE_LOCK_SCHEMA_V2,
+        )
+        self.assertEqual(
+            diagnostic_v2["sha256"],
+            subject.SUPERSEDED_DIAGNOSTIC_LOCK_V2_SHA256,
+        )
+        self.assertIsNone(diagnostic_v2["evidence_error"])
 
         evidence = subject.superseded_lock_evidence("acceptance")
-        self.assertEqual(len(evidence), 2)
+        self.assertEqual(len(evidence), 3)
         self.assertTrue(all(item["present"] for item in evidence))
         self.assertTrue(all(item["superseded"] for item in evidence))
         self.assertTrue(
@@ -123,6 +133,14 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         self.assertEqual(
             evidence[1]["sha256"],
             "ee7be009081b1776b6e5068c9c39b7f4429c987a44cea0a25f7c95f27fc8f130",
+        )
+        self.assertEqual(
+            evidence[2]["observed_schema"],
+            subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V3,
+        )
+        self.assertEqual(
+            evidence[2]["sha256"],
+            "f319f4b4b1cd05ad97504b8fc317e8c24abb3736d5292ec64e85647731df5a45",
         )
         self.assertTrue(
             all(item["evidence_error"] is None for item in evidence)
@@ -183,6 +201,18 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         self.assertIn(
             "experiments/TPD_CLEAN_V7_DCH_ACCEPTANCE_AMENDMENT_V1.md",
             acceptance_roots,
+        )
+        self.assertIn(
+            "experiments/TPD_CLEAN_V7_DCH_ACCEPTANCE_AMENDMENT_V2.md",
+            acceptance_roots,
+        )
+        archived = subject.acceptance_frozen_input_relatives()
+        self.assertEqual(len(archived), 3)
+        self.assertTrue(
+            all(
+                "superseded_acceptance_v3_markdown_order_v1" in path
+                for path in archived
+            )
         )
 
     def test_eager_import_closure_adds_nested_local_sources_only(self) -> None:
