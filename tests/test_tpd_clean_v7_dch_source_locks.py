@@ -89,6 +89,10 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
             subject.SUPERSEDED_DIAGNOSTIC_LOCK_SHA256,
         )
         self.assertIsNone(diagnostic["evidence_error"])
+        self.assertEqual(
+            diagnostic["superseded_by_relative_path"],
+            subject.SUPERSEDED_DIAGNOSTIC_LOCK_V2_RELATIVE,
+        )
         chain = diagnostic["predecessor_chain_evidence"]
         self.assertEqual(len(chain), 2)
         self.assertEqual(
@@ -110,6 +114,10 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
             subject.SUPERSEDED_DIAGNOSTIC_LOCK_V2_SHA256,
         )
         self.assertIsNone(diagnostic_v2["evidence_error"])
+        self.assertEqual(
+            diagnostic_v2["superseded_by_relative_path"],
+            subject.DEFAULT_LOCK_RELATIVES["diagnostic"],
+        )
 
         evidence = subject.superseded_lock_evidence("acceptance")
         self.assertEqual(len(evidence), 3)
@@ -144,6 +152,14 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         )
         self.assertTrue(
             all(item["evidence_error"] is None for item in evidence)
+        )
+        self.assertEqual(
+            [item["superseded_by_relative_path"] for item in evidence],
+            [
+                subject.SUPERSEDED_ACCEPTANCE_LOCK_V2_RELATIVE,
+                subject.SUPERSEDED_ACCEPTANCE_LOCK_V3_RELATIVE,
+                subject.DEFAULT_LOCK_RELATIVES["acceptance"],
+            ],
         )
 
     def test_training_paths_are_exact_entry_runtime_authority(self) -> None:
@@ -324,7 +340,7 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
                     formal_contract_override=SYNTHETIC_FORMAL_CONTRACT,
                 )
 
-    def test_acceptance_v1_v2_are_rejected_as_the_current_lock(self) -> None:
+    def test_acceptance_v1_v2_v3_are_rejected_as_current(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "source.py").write_text(
@@ -342,10 +358,10 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
             )
             self.assertEqual(
                 payload["schema"],
-                subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V3,
+                subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V4,
             )
 
-            current = root / "current-v3.json"
+            current = root / "current-v4.json"
             subject.write_new_json(current, payload)
             loaded, _ = subject.validate_source_lock(
                 "acceptance",
@@ -361,6 +377,7 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
             for version, schema in (
                 ("v1", subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V1),
                 ("v2", subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V2),
+                ("v3", subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V3),
             ):
                 old_payload = dict(payload)
                 old_payload["schema"] = schema
@@ -368,7 +385,7 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
                 subject.write_new_json(old_lock, old_payload)
                 with self.assertRaisesRegex(
                     ValueError,
-                    "expected .*acceptance_source_lock_v3.*observed "
+                    "expected .*acceptance_source_lock_v4.*observed "
                     f".*acceptance_source_lock_{version}",
                 ):
                     subject.validate_source_lock(
@@ -384,6 +401,7 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
             for relative in (
                 subject.SUPERSEDED_ACCEPTANCE_LOCK_RELATIVE,
                 subject.SUPERSEDED_ACCEPTANCE_LOCK_V2_RELATIVE,
+                subject.SUPERSEDED_ACCEPTANCE_LOCK_V3_RELATIVE,
             ):
                 superseded = root / relative
                 superseded.parent.mkdir(parents=True, exist_ok=True)
@@ -399,11 +417,12 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
                         formal_contract_override=SYNTHETIC_FORMAL_CONTRACT,
                     )
 
-    def test_diagnostic_v1_path_is_rejected_as_current(self) -> None:
+    def test_diagnostic_v1_v2_paths_are_rejected_as_current(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for relative in (
                 subject.SUPERSEDED_DIAGNOSTIC_LOCK_RELATIVE,
+                subject.SUPERSEDED_DIAGNOSTIC_LOCK_V2_RELATIVE,
                 subject.PRE_ACCEPTANCE_V2_DIAGNOSTIC_LOCK_RELATIVE,
                 subject.DIAGNOSTIC_SUPERSESSION_RECORD_RELATIVE,
             ):
@@ -412,7 +431,7 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
                 superseded.write_text("{}\n", encoding="utf-8")
                 with self.assertRaisesRegex(
                     ValueError,
-                    "superseded.*current v2",
+                    "superseded.*current v3",
                 ):
                     subject.validate_source_lock(
                         "diagnostic",
@@ -479,13 +498,13 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         self.assertEqual(readiness["writes_performed"], 0)
         self.assertEqual(
             readiness["expected_schema"],
-            subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V3,
+            subject.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V4,
         )
         self.assertEqual(
             readiness["default_lock_relative"],
-            "experiments/tpd_clean_v7_dch_acceptance_source_lock_v3.json",
+            "experiments/tpd_clean_v7_dch_acceptance_source_lock_v4.json",
         )
-        self.assertEqual(len(readiness["superseded_lock_evidence"]), 2)
+        self.assertEqual(len(readiness["superseded_lock_evidence"]), 3)
         self.assertTrue(readiness["superseded_lock_evidence_complete"])
         self.assertTrue(
             all(
@@ -497,8 +516,9 @@ class TPDCleanV7DCHSourceLockTests(unittest.TestCase):
         training = subject.source_lock_readiness("training")
         self.assertEqual(diagnostic["source_count"], 18)
         self.assertEqual(training["source_count"], 24)
-        self.assertEqual(readiness["source_count"], 39)
-        self.assertEqual(len(diagnostic["superseded_lock_evidence"]), 1)
+        self.assertEqual(readiness["source_count"], 40)
+        self.assertEqual(readiness["frozen_input_count"], 3)
+        self.assertEqual(len(diagnostic["superseded_lock_evidence"]), 2)
         self.assertTrue(diagnostic["superseded_lock_evidence_complete"])
         self.assertIn("ready", readiness)
         if not readiness["ready"]:

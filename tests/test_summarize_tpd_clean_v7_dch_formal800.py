@@ -76,13 +76,13 @@ def passing_inputs() -> tuple[dict, dict, dict]:
 
 
 class DCHFormal800SummaryTests(unittest.TestCase):
-    def test_default_acceptance_lock_is_current_v3(self) -> None:
+    def test_default_acceptance_lock_is_current_v4(self) -> None:
         self.assertEqual(
             subject.DEFAULT_ACCEPTANCE_SOURCE_LOCK,
             (
                 subject.REPO_ROOT
                 / "experiments/"
-                "tpd_clean_v7_dch_acceptance_source_lock_v3.json"
+                "tpd_clean_v7_dch_acceptance_source_lock_v4.json"
             ),
         )
         self.assertNotEqual(
@@ -213,14 +213,104 @@ class DCHFormal800SummaryTests(unittest.TestCase):
         gate_d_rows = [
             line for line in gate_d.splitlines() if line.startswith("| ")
         ]
+        gate_rows = [
+            line
+            for line in markdown.split(
+                "## Gate A–E",
+                1,
+            )[1].split(
+                "## Gate D — Full versus Capacity (24 comparisons)",
+                1,
+            )[0].splitlines()
+            if line.startswith("- `")
+        ]
         self.assertEqual(len(budget_rows) - 2, 40)
         self.assertEqual(len(gate_d_rows) - 2, 24)
+        self.assertEqual(
+            [
+                line.split("`", 2)[1]
+                for line in gate_rows
+            ],
+            list(subject.GATE_CHECK_KEYS),
+        )
+        observed_gate_d = [
+            (
+                int(line.split("|")[1].strip()),
+                line.split("|")[2].strip(),
+            )
+            for line in gate_d_rows[2:]
+        ]
+        expected_gate_d = [
+            (seed, label)
+            for seed in subject.SEEDS
+            for label in subject.GATE_D_POINT_LABELS
+        ]
+        self.assertEqual(observed_gate_d, expected_gate_d)
         serialized = json.dumps(report, sort_keys=True)
         round_tripped = json.loads(serialized)
         self.assertEqual(
             subject.render_markdown(round_tripped),
             markdown,
         )
+
+    def test_renderer_rejects_missing_or_extra_gate_labels(self) -> None:
+        runs, spd, integrity = passing_inputs()
+        keyed = {
+            f"{variant}/seed_{seed}": record
+            for (variant, seed), record in runs.items()
+        }
+        report = subject.build_report_from_components(
+            runs=runs,
+            keyed_runs=keyed,
+            spd_reference=spd,
+            engineering_integrity=integrity,
+            bindings={},
+        )
+        for mutation in ("missing", "extra"):
+            with self.subTest(scope="gate_a_to_e", mutation=mutation):
+                changed = copy.deepcopy(report)
+                checks = changed["engineering_gate"]["checks"]
+                if mutation == "missing":
+                    checks.pop(subject.GATE_CHECK_KEYS[0])
+                else:
+                    checks["gate_unregistered"] = {"passed": False}
+                with self.assertRaisesRegex(
+                    subject.IncompleteArtifact,
+                    "Gate A--E check set differs",
+                ):
+                    subject.render_markdown(changed)
+
+        for mutation in ("missing", "extra"):
+            with self.subTest(scope="gate_d", mutation=mutation):
+                changed = copy.deepcopy(report)
+                comparisons = changed["engineering_gate"]["checks"][
+                    "gate_d_full_vs_capacity"
+                ]["per_seed"][str(subject.SEEDS[0])]["comparisons"]
+                if mutation == "missing":
+                    comparisons.pop(subject.GATE_D_POINT_LABELS[0])
+                else:
+                    comparisons["unregistered.point"] = {
+                        "capacity_strictly_covers_full": False,
+                        "full_strictly_covers_capacity": False,
+                    }
+                with self.assertRaisesRegex(
+                    subject.IncompleteArtifact,
+                    "Gate D comparison set differs for seed 42",
+                ):
+                    subject.render_markdown(changed)
+
+    def test_current_renderer_reproduces_archived_v3_markdown(self) -> None:
+        archive = (
+            subject.DEFAULT_OUTPUT_DIR
+            / "superseded_acceptance_v3_markdown_order_v1"
+        )
+        report = json.loads(
+            (archive / subject.JSON_OUTPUT_NAME).read_text(encoding="utf-8")
+        )
+        markdown = (
+            archive / subject.MARKDOWN_OUTPUT_NAME
+        ).read_text(encoding="utf-8")
+        self.assertEqual(subject.render_markdown(report), markdown)
 
     def test_writer_refuses_to_replace_either_report(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

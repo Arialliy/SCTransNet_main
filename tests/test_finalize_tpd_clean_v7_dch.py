@@ -110,14 +110,14 @@ def mechanism(*, supported: bool) -> dict:
 
 
 class FinalizeTPDCleanV7DCHTests(unittest.TestCase):
-    def test_default_acceptance_lock_is_current_v3(self) -> None:
+    def test_default_acceptance_lock_is_current_v4(self) -> None:
         self.assertEqual(
             finalizer.DEFAULT_ACCEPTANCE_SOURCE_LOCK,
             summary.DEFAULT_ACCEPTANCE_SOURCE_LOCK,
         )
         self.assertEqual(
             finalizer.DEFAULT_ACCEPTANCE_SOURCE_LOCK.name,
-            "tpd_clean_v7_dch_acceptance_source_lock_v3.json",
+            "tpd_clean_v7_dch_acceptance_source_lock_v4.json",
         )
 
     def test_mechanism_failure_does_not_veto_passed_gates(self) -> None:
@@ -227,10 +227,10 @@ class FinalizeTPDCleanV7DCHTests(unittest.TestCase):
         )
         self.assertEqual(
             lock_input["validation"]["expected_schema"],
-            finalizer.source_locks.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V3,
+            finalizer.source_locks.ACCEPTANCE_SOURCE_LOCK_SCHEMA_V4,
         )
         self.assertIn(
-            "acceptance_source_lock_v3",
+            "acceptance_source_lock_v4",
             lock_input["validation"]["error"],
         )
 

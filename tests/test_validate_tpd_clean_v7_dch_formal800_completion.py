@@ -34,21 +34,22 @@ def validation_fields(epoch: int = 1) -> dict[str, float | int]:
 
 
 class V7DCHFormal800CompletionTests(unittest.TestCase):
-    def test_default_acceptance_lock_is_v3_and_v1_v2_are_rejected(self) -> None:
+    def test_default_acceptance_lock_is_v4_and_old_locks_are_rejected(self) -> None:
         expected = (
             subject.REPO_ROOT
-            / "experiments/tpd_clean_v7_dch_acceptance_source_lock_v3.json"
+            / "experiments/tpd_clean_v7_dch_acceptance_source_lock_v4.json"
         )
         self.assertEqual(subject.DEFAULT_ACCEPTANCE_SOURCE_LOCK, expected)
         for relative in (
             subject.locks.SUPERSEDED_ACCEPTANCE_LOCK_RELATIVE,
             subject.locks.SUPERSEDED_ACCEPTANCE_LOCK_V2_RELATIVE,
+            subject.locks.SUPERSEDED_ACCEPTANCE_LOCK_V3_RELATIVE,
         ):
             superseded = subject.REPO_ROOT / relative
             self.assertTrue(superseded.is_file())
             with self.assertRaisesRegex(
                 subject.IncompleteArtifact,
-                "superseded.*current v3",
+                "superseded.*current v4",
             ):
                 subject.validate_acceptance_source_lock(superseded)
 
@@ -317,6 +318,99 @@ class V7DCHFormal800CompletionTests(unittest.TestCase):
                 subject.sha256_file(first),
             )
             self.assertEqual(manifest["inputs"][0]["size_bytes"], 5)
+
+    def test_published_markdown_is_reproduced_from_published_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            json_path = root / subject.JSON_OUTPUT_NAME
+            markdown_path = root / subject.MARKDOWN_OUTPUT_NAME
+            published = {
+                "status": "complete",
+                "gate_evaluated": True,
+                "generated_at_utc": "published",
+                "decision": "ENGINEERING_GATE_FAIL",
+            }
+            derived = dict(published)
+            derived["generated_at_utc"] = "derived"
+            json_path.write_text(
+                json.dumps(published, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            markdown_path.write_text("# canonical\n", encoding="utf-8")
+            summary_module = mock.Mock()
+            summary_module.build_report.return_value = derived
+            summary_module.render_markdown.return_value = "# canonical\n"
+            matrix = {"runs": {}}
+            with (
+                mock.patch.object(
+                    subject,
+                    "_summary_module",
+                    return_value=summary_module,
+                ),
+                mock.patch.object(
+                    subject,
+                    "validate_completion_matrix",
+                    return_value=matrix,
+                ),
+            ):
+                observed, observed_matrix = subject.validate_published_report(
+                    root
+                )
+                self.assertEqual(observed, published)
+                self.assertIs(observed_matrix, matrix)
+                rendered = summary_module.render_markdown.call_args.args[0]
+                self.assertEqual(rendered, published)
+
+                markdown_path.write_text(
+                    "# canonical\nchanged\n",
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(
+                    subject.IncompleteArtifact,
+                    "Markdown differs",
+                ):
+                    subject.validate_published_report(root)
+
+    def test_published_json_semantic_tamper_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            published = {
+                "status": "complete",
+                "gate_evaluated": True,
+                "generated_at_utc": "published",
+                "decision": "ENGINEERING_GATE_FAIL",
+            }
+            derived = dict(published)
+            derived["decision"] = "ENGINEERING_GATE_PASS"
+            (root / subject.JSON_OUTPUT_NAME).write_text(
+                json.dumps(published, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            (root / subject.MARKDOWN_OUTPUT_NAME).write_text(
+                "# canonical\n",
+                encoding="utf-8",
+            )
+            summary_module = mock.Mock()
+            summary_module.build_report.return_value = derived
+            matrix = {"runs": {}}
+            with (
+                mock.patch.object(
+                    subject,
+                    "_summary_module",
+                    return_value=summary_module,
+                ),
+                mock.patch.object(
+                    subject,
+                    "validate_completion_matrix",
+                    return_value=matrix,
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    subject.IncompleteArtifact,
+                    "published DCH report differs from exact inputs",
+                ):
+                    subject.validate_published_report(root)
+            summary_module.render_markdown.assert_not_called()
 
     def test_publish_is_exclusive_and_marker_binds_three_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

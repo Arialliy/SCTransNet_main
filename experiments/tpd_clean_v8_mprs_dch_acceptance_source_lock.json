@@ -1,0 +1,37 @@
+{
+  "candidate_family": "tpd_clean_v8_mprs_dch",
+  "dataset": "NUDT-SIRST",
+  "lock_kind": "acceptance",
+  "policy": {
+    "checkpoint_reselection_permitted": false,
+    "existing_lock_overwrite_forbidden": true,
+    "gates_A_to_E_unchanged": true,
+    "official_test_accessed": false,
+    "performance_metrics": [
+      "Pd",
+      "Fa",
+      "mIoU"
+    ],
+    "source_symlinks_forbidden": true
+  },
+  "schema": "sctransnet_tpd_clean_v8_mprs_dch_acceptance_source_lock_v1",
+  "source_count": 10,
+  "source_sha256": {
+    "analysis/analyze_tpd_clean_v8_mprs_mechanism.py": "c47bfb7af596f9f30eb11252188bb63ab0750b1144b8991b6127090762b6ec4d",
+    "analysis/benchmark_tpd_clean_v8_mprs_dch.py": "e065b90dc80392be6c8e232fc5cd6c413ad43d48ff1b70db75241ea36a4fea59",
+    "experiments/TPD_CLEAN_V8_MPRS_DCH_PREFLIGHT_AMENDMENT_V1.md": "8a8e4f0c5e7891a73b7e641c93f2f99558c0b0771babc741070d3fd6b8d21c6f",
+    "experiments/TPD_CLEAN_V8_MPRS_DCH_PROTOCOL.md": "abceb4cd3b8863d2d96eb0077ecdd7cef9691b8ece04cc6ebd4d618bc6ce66c3",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_clean_v8_mprs_dch_pd_fa.py": "3eb1cb90134183b824876efc282147470df3401a8b3e71edf73952e7c6987433",
+    "experiments/freeze_tpd_clean_v8_mprs_dch_source_locks.py": "ac9ab0fb4bc37610b4a95bcd680c0bb70b727feb768d73c80a30875187ce1dcc",
+    "experiments/launch_tpd_clean_v8_mprs_dch_formal800_2x5090.sh": "75e0fb68e469eb694805e8ee2374ac11ee54499d2f32189682ad9187dd0c2945",
+    "experiments/run_tpd_clean_v8_mprs_dch_formal800_2x5090_lane.sh": "ed548f7e4368b0d16cd15227987d4a2b78a3d80e4b64afbec863d3f87e78955d",
+    "experiments/smoke_tpd_clean_v8_mprs_dch.py": "6285292698d5cda1e27f6af0c4bdff36bb0c20d7e3041e3a18e4e1f7838e7e6c"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "training_source_lock_sha256": "69188fc4df4d207ae8d003ed637d43e439a54e6a740aee5fcd08f978a85228ce",
+  "variants": [
+    "tpd_clean_v8_mprs_dch_full",
+    "tpd_clean_v8_mprs_dch_capacity"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "bindings": {
+    "aggregate:v2_complete_marker": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v2_exact_v1/NUDT-SIRST/comparison/POSTPROCESS_COMPLETE.json",
+      "sha256": "5949f4de72019df6ef99fa15bb031a4f053f1c8fa65062f91dd232ee9a22c84a"
+    },
+    "aggregate:v2_json": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v2_exact_v1/NUDT-SIRST/comparison/tpd_ner_v8_mprs_dch_v2_formal800_comparison.json",
+      "sha256": "7e73b7d8ef1d801a6d73efd8b18371cb7fb191b8365662e15f661079648775b4"
+    },
+    "aggregate:v2_markdown": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v2_exact_v1/NUDT-SIRST/comparison/tpd_ner_v8_mprs_dch_v2_formal800_comparison.md",
+      "sha256": "58edb69ace8e9e9ea11255381fb8e377d063ddceb2a5d777634c6212dc419243"
+    },
+    "artifact:baseline_sweep_best": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_exact_v1/baseline_reference_closed_interval_v1/NUDT-SIRST/original/seed_42_formal800_pd_fp32_4x5090_v1/pd_fa_sweep_best.pth.json",
+      "sha256": "fb457205d1aab2e3271f4e6aa8be6375049def2c99c0001023840d6c75addab9"
+    },
+    "artifact:baseline_sweep_best_miou": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_exact_v1/baseline_reference_closed_interval_v1/NUDT-SIRST/original/seed_42_formal800_pd_fp32_4x5090_v1/pd_fa_sweep_best_miou.pth.json",
+      "sha256": "90f0869fb8ebb8a10745218b4309618d6fc74edd397727f5efcf314103279ad2"
+    },
+    "artifact:v3_sweep_best": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v3_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_v3_full_relay_on/seed_42_formal800_exact_v3_seed42/pd_fa_sweep_best.pth.json",
+      "sha256": "1fb793fdde67acf8333761c55029b04738cfa62fba47b8f09528ee722a459ffb"
+    },
+    "artifact:v3_sweep_best_miou": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v3_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_v3_full_relay_on/seed_42_formal800_exact_v3_seed42/pd_fa_sweep_best_miou.pth.json",
+      "sha256": "5d79e09ca29bd986d3d8b64fa0100a0ee95c76c3fcc11681d2964732488f0429"
+    },
+    "protocol:baseline": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_exact_v1/baseline_reference_closed_interval_v1/NUDT-SIRST/original/seed_42_formal800_pd_fp32_4x5090_v1/protocol.json",
+      "sha256": "de92dc7dc647b02fa37079715d3b6cdb0925c00bd1e7324a864ff51d2f7051f3"
+    },
+    "protocol:v1": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_full_relay_off/seed_42_formal800_exact_v1/protocol.json",
+      "sha256": "15cc2a2efc562d9696efd03d56ba7cdd0df383c939d609b969ae547ec0741ccc"
+    },
+    "protocol:v2": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v2_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_v2_full_relay_on/seed_42_formal800_exact_v2_seed42/protocol.json",
+      "sha256": "c9418fd9e7fa5afe88a1e517a7af5212ca19082d44c1da5de273880315d1c6bf"
+    },
+    "protocol:v3": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v3_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_v3_full_relay_on/seed_42_formal800_exact_v3_seed42/protocol.json",
+      "sha256": "d7af39557953a8b6e2cdb4e45549eeb245be24763ede11287481abd800dd5098"
+    },
+    "source:frozen_v3_postprocess": {
+      "path": "experiments/postprocess_tpd_ner_v8_mprs_dch_v3_formal800.py",
+      "sha256": "016d9ae6b061ed61a96fbd554d90e1390066bac0665cf40772cd40752ade4f49"
+    },
+    "source:repair_protocol": {
+      "path": "experiments/TPD_NER_V8_MPRS_DCH_V3_FORMAL800_SELECTION_CONTRACT_REPAIR_V1.md",
+      "sha256": "bad546f1f1f2c9d97bae72c78b6f3774481cd2c48bb97e69652bfb0827c482c5"
+    },
+    "source:repair_wrapper": {
+      "path": "experiments/repair_postprocess_tpd_ner_v8_mprs_dch_v3_formal800_selection_contract_v1.py",
+      "sha256": "e4ecba1692ad380527f2d187a1f6f46041759314253acf9cbd85a6abf1789a96"
+    }
+  },
+  "policy": {
+    "aggregate_implementation": "frozen_v3_aggregate_and_write",
+    "frozen_artifacts_modified": false,
+    "logic_override": "same_split_and_training_contract",
+    "new_evaluation_count": 0,
+    "publication_scope": "comparison_selection_contract_repair_v1"
+  },
+  "repair_id": "v3_formal800_selection_contract_repair_v1",
+  "schema": "sctransnet_tpd_ner_v8_mprs_dch_v3_selection_contract_repair_attestation_v1",
+  "status": "frozen"
+}

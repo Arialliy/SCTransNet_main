@@ -466,6 +466,10 @@ def render_markdown(report: Mapping[str, Any]) -> str:
 
     runs = report["candidate_runs"]
     gate = report["engineering_gate"]
+    _require(
+        set(gate["checks"]) == set(GATE_CHECK_KEYS),
+        "Gate A--E check set differs",
+    )
     lines = [
         "# TPD-Clean V7-DCH formal800 comparison",
         "",
@@ -531,6 +535,10 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     )
     for seed in SEEDS:
         comparisons = gate_d["per_seed"][str(seed)]["comparisons"]
+        _require(
+            set(comparisons) == set(GATE_D_POINT_LABELS),
+            f"Gate D comparison set differs for seed {seed}",
+        )
         for label in GATE_D_POINT_LABELS:
             record = comparisons[label]
             lines.append(

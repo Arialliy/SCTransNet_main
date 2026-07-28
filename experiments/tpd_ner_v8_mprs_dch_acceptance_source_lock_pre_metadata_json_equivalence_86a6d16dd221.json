@@ -1,0 +1,44 @@
+{
+  "candidate_family": "tpd_ner_v8_mprs_dch",
+  "dataset": "NUDT-SIRST",
+  "lock_kind": "acceptance",
+  "policy": {
+    "existing_manifest_overwrite_forbidden": true,
+    "formal_checkpoints": [
+      "best.pth.tar",
+      "best_miou.pth.tar"
+    ],
+    "multi_seed_scheduled": false,
+    "official_test_accessed": false,
+    "performance_metrics": [
+      "Pd",
+      "Fa",
+      "mIoU",
+      "false_objects_per_image",
+      "Pd_at_Fa_budget"
+    ],
+    "source_symlinks_forbidden": true,
+    "split_seed": 20260722,
+    "training_seed": 42
+  },
+  "schema": "sctransnet_tpd_ner_v8_mprs_dch_acceptance_source_lock_v1",
+  "source_count": 10,
+  "source_sha256": {
+    "experiments/TPD_NER_V8_MPRS_DCH_PROTOCOL.md": "d0dc07958b210d6a4caaf1062666ca81dc64be85899d331d5cef1fdd3a11b096",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+    "experiments/evaluate_tpd_clean_v8_mprs_dch_pd_fa.py": "3eb1cb90134183b824876efc282147470df3401a8b3e71edf73952e7c6987433",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_pd_fa.py": "002414900b564a3d4ee8973e521bdb447322a91f528b3d5b871d601de97a75f4",
+    "experiments/freeze_tpd_clean_v8_mprs_dch_source_locks.py": "ac9ab0fb4bc37610b4a95bcd680c0bb70b727feb768d73c80a30875187ce1dcc",
+    "experiments/freeze_tpd_ner_v8_mprs_dch_source_locks.py": "1cf105942e742b3859361ba14e25084b25c0d1ef75a6f705a32c9aeebc5f45d9",
+    "experiments/launch_tpd_ner_v8_mprs_dch_formal800_2x5090.sh": "37d750ff62d28a1484daf88d80a83dc0f9a795d6486eb57cdc8e32919c235c92",
+    "experiments/run_tpd_ner_v8_mprs_dch_formal800_2x5090_lane.sh": "94f7d54ab1ece8caa05cb9273bed1d893e849adc49cab0106b9a5a6889a11ac3",
+    "experiments/smoke_tpd_ner_v8_mprs_dch.py": "155c91206b8ed405c23f63f68420d01b91d4ecc57b15484b824636ee2b552322"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "training_source_lock_sha256": "56834090792d10d5d42808f960701634c0e2c6833e582634a042f523661219da",
+  "variants": [
+    "tpd_ner_v8_mprs_dch_full_relay_off",
+    "tpd_ner_v8_mprs_dch_full_relay_on"
+  ]
+}

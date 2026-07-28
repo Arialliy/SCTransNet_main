@@ -1,0 +1,49 @@
+{
+  "bindings": {
+    "artifact:formal_repaired_aggregate": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v3_exact_v1/NUDT-SIRST/comparison_selection_contract_repair_v1/tpd_ner_v8_mprs_dch_v3_formal800_comparison_selection_contract_repair_v1.json",
+      "sha256": "68e36d8afc1620821b61cae76138d90b9ddeb8f2143e76a307c76164c63cb711"
+    },
+    "artifact:v2_source_lock": {
+      "path": "experiments/tpd_ner_v8_mprs_dch_v3_dc_knockout_source_lock_v2.json",
+      "sha256": "ec72d67fbd992eacc2045a5cd5d39a1de9c7daed79a73a7cb92d26512436ea7a"
+    },
+    "artifact:v2_sweep_best": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v3_dc_knockout_v2/NUDT-SIRST/tpd_ner_v8_mprs_dch_v3_full_relay_on/seed_42_formal800_exact_v3_seed42/dc_knockout_pd_fa_sweep_best.pth.json",
+      "sha256": "92dc2a31a325a6a91382f0fd122d039c0730847dbbf84b4424cef08587a1866b"
+    },
+    "artifact:v2_sweep_best_miou": {
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v3_dc_knockout_v2/NUDT-SIRST/tpd_ner_v8_mprs_dch_v3_full_relay_on/seed_42_formal800_exact_v3_seed42/dc_knockout_pd_fa_sweep_best_miou.pth.json",
+      "sha256": "ee0f45566b5558db059efc3c1fcb09ed2f511b1f80ba070b03abcb05a4613a26"
+    },
+    "source:frozen_v2_postprocessor": {
+      "path": "experiments/postprocess_tpd_ner_v8_mprs_dch_v3_dc_knockout.py",
+      "sha256": "eb88410b10ebb5e19191fdffa285c613a1b14363b5ca38ea1f4deace511fd5ef"
+    },
+    "source:repair_protocol": {
+      "path": "experiments/TPD_NER_V8_MPRS_DCH_V3_DC_KNOCKOUT_AGGREGATE_FIELD_REPAIR_V1.md",
+      "sha256": "12da794f87e925994f7d4ac6ffdb2bf1c5407e83f13b9ace3e3a6ea836da3f81"
+    },
+    "source:repair_wrapper": {
+      "path": "experiments/repair_postprocess_tpd_ner_v8_mprs_dch_v3_dc_knockout_aggregate_field_v1.py",
+      "sha256": "681f82049a6d8712866242731933d1dbea40c26b8121471435e82c48402cbec6"
+    }
+  },
+  "policy": {
+    "frozen_artifacts_modified": false,
+    "gpu_work": false,
+    "logic_override": "load_formal_reference_rows.pd_at_fa_budget.field_mapping_only",
+    "new_evaluation_count": 0,
+    "normalized_field": "achieved_fa",
+    "publication_scope": "comparison_aggregate_field_repair_v1",
+    "reused_frozen_functions": [
+      "validate_checkpoint_sweep",
+      "build_report",
+      "render_markdown"
+    ],
+    "source_field": "fa"
+  },
+  "repair_id": "v3_dc_knockout_v2_aggregate_field_repair_v1",
+  "schema": "sctransnet_tpd_ner_v8_mprs_dch_v3_dc_knockout_aggregate_field_repair_attestation_v1",
+  "status": "frozen"
+}

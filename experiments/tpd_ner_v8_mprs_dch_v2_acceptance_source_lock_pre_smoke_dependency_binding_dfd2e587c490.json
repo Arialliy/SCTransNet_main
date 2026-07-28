@@ -1,0 +1,91 @@
+{
+  "candidate_family": "tpd_clean_v8_mprs_dch_explicit_five_node_ner_v2_rms_centered",
+  "dataset": "NUDT-SIRST",
+  "lock_kind": "acceptance",
+  "performance_gate_contract": {
+    "anchor_target_count": 189,
+    "baseline_affects_decision": false,
+    "miou_secondary_fixed_threshold_0_5": {
+      "maximum_fa": 1e-06,
+      "minimum_matched_targets": 187,
+      "minimum_miou": 0.946542,
+      "minimum_pd": 0.9894179894179894
+    },
+    "paired_v2_on_vs_v1_off_each_checkpoint_role": {
+      "budget_count": 5,
+      "candidate": "tpd_ner_v8_mprs_dch_v2_full_relay_on",
+      "minimum_non_inferior_budget_count": 4,
+      "minimum_strictly_better_budget_count": 1,
+      "reference": "tpd_ner_v8_mprs_dch_full_relay_off"
+    },
+    "pd_at_fa_budget": {
+      "0.0001": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      },
+      "1e-05": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      },
+      "1e-06": {
+        "minimum_matched_targets": 187,
+        "minimum_pd": 0.9894179894179894
+      },
+      "5e-05": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      },
+      "5e-06": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      }
+    },
+    "pd_primary_fixed_threshold_0_5": {
+      "maximum_fa": 1e-06,
+      "minimum_matched_targets": 188,
+      "minimum_miou": 0.933647,
+      "minimum_pd": 0.9947089947089947
+    },
+    "v1_off_absolute_gate_required": false
+  },
+  "policy": {
+    "baseline_sweeps_read_only": true,
+    "existing_manifest_overwrite_forbidden": true,
+    "multi_seed_scheduled": false,
+    "new_sweeps": [
+      "tpd_ner_v8_mprs_dch_v2_full_relay_on/best.pth.tar",
+      "tpd_ner_v8_mprs_dch_v2_full_relay_on/best_miou.pth.tar"
+    ],
+    "official_test_accessed": false,
+    "source_symlinks_forbidden": true,
+    "split_seed": 20260722,
+    "training_seed": 42,
+    "v1_off_sweeps_read_only": true
+  },
+  "relay_off_retrained": false,
+  "required_control": "tpd_ner_v8_mprs_dch_full_relay_off",
+  "schema": "sctransnet_tpd_ner_v8_mprs_dch_v2_acceptance_source_lock_v1",
+  "source_count": 15,
+  "source_sha256": {
+    "experiments/TPD_NER_V8_MPRS_DCH_V2_PROTOCOL.md": "4a7ecb882281f54d2acdfa4717d84b25503c769e69c2372c7459ec976aab312f",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_sctransnet_baseline_reference_closed_interval.py": "c2a19374db8fc0853353f9e85b22de4bb110dd273597d49fd4136be960c728e9",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+    "experiments/evaluate_tpd_clean_v8_mprs_dch_pd_fa.py": "3eb1cb90134183b824876efc282147470df3401a8b3e71edf73952e7c6987433",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_pd_fa.py": "002414900b564a3d4ee8973e521bdb447322a91f528b3d5b871d601de97a75f4",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_v2_pd_fa.py": "6abd9bf4822a2ab8bcfa446a21e90f9670855de40864c9251d390766324cba5a",
+    "experiments/freeze_tpd_clean_v8_mprs_dch_source_locks.py": "ac9ab0fb4bc37610b4a95bcd680c0bb70b727feb768d73c80a30875187ce1dcc",
+    "experiments/freeze_tpd_ner_v8_mprs_dch_v2_source_locks.py": "33b20d50adc4644d7ba7e55a9b4e32656e8dc66846a31b4869589b71086e66fe",
+    "experiments/handoff_tpd_ner_v8_v1_to_v2.py": "d2b2f0fcd6dcf13858cc6e5ec070efa081ebce6c99cd3e2120c00787ba0f5647",
+    "experiments/launch_tpd_ner_v8_mprs_dch_v2_formal800_1x5090.sh": "965218c6360a2f4f2308a8785905df0ca95e23cc26ac70a3942faa63eb7b5786",
+    "experiments/postprocess_tpd_ner_v8_mprs_dch_formal800.py": "12a63b8cad7250a904e81a3344ff7ee79b654c18ce39fbf43bd51274e45a0816",
+    "experiments/postprocess_tpd_ner_v8_mprs_dch_v2_formal800.py": "a613a8c208e8e31cf0258948470dbe3cfab479dc59923e98a0ae220d4d66d0f1",
+    "experiments/run_tpd_ner_v8_mprs_dch_v2_formal800_1x5090_lane.sh": "061110a15efd4c1cc7da3f63d85c2fd15614ddf1d454c8a63d0064ec8f98c42f",
+    "experiments/smoke_tpd_ner_v8_mprs_dch_v2.py": "7e4b61befe9e247e712b7f02463a80490923bae2595ff17f3e8570981fe2f202"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "training_source_lock_sha256": "d50f65f9969916fa835f267c8081547c146bd333b2682a482daad621c39b5123",
+  "variants": [
+    "tpd_ner_v8_mprs_dch_v2_full_relay_on"
+  ]
+}

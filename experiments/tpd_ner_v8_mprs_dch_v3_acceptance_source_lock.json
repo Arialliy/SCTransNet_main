@@ -1,0 +1,118 @@
+{
+  "candidate_family": "tpd_clean_v8_mprs_dch_explicit_five_node_ner_v3_post_center_dc",
+  "dataset": "NUDT-SIRST",
+  "lock_kind": "acceptance",
+  "performance_gate_contract": {
+    "all_required_components": [
+      "pd_primary_absolute",
+      "miou_secondary_absolute",
+      "pd_primary_v3_vs_v1",
+      "miou_secondary_v3_vs_v1",
+      "pd_primary_v3_vs_v2",
+      "miou_secondary_v3_vs_v2"
+    ],
+    "anchor_target_count": 189,
+    "baseline_affects_decision": false,
+    "miou_secondary_fixed_threshold_0_5": {
+      "maximum_fa": 1e-06,
+      "minimum_matched_targets": 187,
+      "minimum_miou": 0.946542,
+      "minimum_pd": 0.9894179894179894
+    },
+    "paired_v3_on_vs_v1_off_each_checkpoint_role": {
+      "budget_count": 5,
+      "candidate": "tpd_ner_v8_mprs_dch_v3_full_relay_on",
+      "minimum_non_inferior_budget_count": 4,
+      "minimum_strictly_better_budget_count": 1,
+      "reference": "tpd_ner_v8_mprs_dch_full_relay_off"
+    },
+    "paired_v3_on_vs_v2_on_each_checkpoint_role": {
+      "budget_count": 5,
+      "candidate": "tpd_ner_v8_mprs_dch_v3_full_relay_on",
+      "minimum_non_inferior_budget_count": 4,
+      "minimum_strictly_better_budget_count": 1,
+      "reference": "tpd_ner_v8_mprs_dch_v2_full_relay_on"
+    },
+    "pd_at_fa_budget": {
+      "0.0001": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      },
+      "1e-05": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      },
+      "1e-06": {
+        "minimum_matched_targets": 187,
+        "minimum_pd": 0.9894179894179894
+      },
+      "5e-05": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      },
+      "5e-06": {
+        "minimum_matched_targets": 188,
+        "minimum_pd": 0.9947089947089947
+      }
+    },
+    "pd_primary_fixed_threshold_0_5": {
+      "maximum_fa": 1e-06,
+      "minimum_matched_targets": 188,
+      "minimum_miou": 0.933647,
+      "minimum_pd": 0.9947089947089947
+    },
+    "tiny_pd_reported_not_independent_gate": true,
+    "v1_off_absolute_gate_required": false,
+    "v2_predecessor_absolute_gate_required": false
+  },
+  "policy": {
+    "all_gate_components_required": true,
+    "baseline_sweeps_read_only": true,
+    "existing_manifest_overwrite_forbidden": true,
+    "multi_seed_scheduled": false,
+    "new_sweeps": [
+      "tpd_ner_v8_mprs_dch_v3_full_relay_on/best.pth.tar",
+      "tpd_ner_v8_mprs_dch_v3_full_relay_on/best_miou.pth.tar"
+    ],
+    "official_test_accessed": false,
+    "source_symlinks_forbidden": true,
+    "split_seed": 20260722,
+    "training_seed": 42,
+    "v1_off_sweeps_read_only": true,
+    "v2_predecessor_sweeps_read_only": true
+  },
+  "relay_off_retrained": false,
+  "required_control": "tpd_ner_v8_mprs_dch_full_relay_off",
+  "schema": "sctransnet_tpd_ner_v8_mprs_dch_v3_acceptance_source_lock_v1",
+  "source_count": 19,
+  "source_sha256": {
+    "experiments/TPD_NER_V8_MPRS_DCH_V3_PROTOCOL.md": "c93c410cd8cf6282acbaebbe40be6c558db6b28c6bb20bbfd4d956bf48fa3a4d",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_sctransnet_baseline_reference_closed_interval.py": "c2a19374db8fc0853353f9e85b22de4bb110dd273597d49fd4136be960c728e9",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+    "experiments/evaluate_tpd_clean_v8_mprs_dch_pd_fa.py": "3eb1cb90134183b824876efc282147470df3401a8b3e71edf73952e7c6987433",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_pd_fa.py": "5274a68275443f2b44a155042ee1f2d083ac33d8e40561d911e96cd5d6c2026c",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_v2_pd_fa.py": "78429a8f1af148cb45628bd17a9f37cc6bc26cfa1ff25414e8469bd1bc535575",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_v3_pd_fa.py": "66798066c9e7b18f6ab3ca95edaf43f999d97641f01474659879fdb6c486b2d6",
+    "experiments/freeze_tpd_clean_v8_mprs_dch_source_locks.py": "ac9ab0fb4bc37610b4a95bcd680c0bb70b727feb768d73c80a30875187ce1dcc",
+    "experiments/freeze_tpd_ner_v8_mprs_dch_v2_source_locks.py": "1768919e4666e114f53006a49513a26565fd8b5674caf73039e0d3f9e634eb4c",
+    "experiments/freeze_tpd_ner_v8_mprs_dch_v3_source_locks.py": "31fd3e826add7bd7c2e60763f87ce0b84774451f46b52e1b8e4a92538f99cc93",
+    "experiments/handoff_tpd_ner_v8_v1_to_v2.py": "84a4fcc9695256f54df3f64c76f2bf82ac2321d0bc3a743f64924413acc14213",
+    "experiments/handoff_tpd_ner_v8_v2_to_v3.py": "0c1c3f7426761372e24ccbe602d9a820a48205c7f955059c22fe47477b664180",
+    "experiments/launch_tpd_ner_v8_mprs_dch_v3_formal800_1x5090.sh": "01fd5a7f8884fe7b62d3a7d79f9d08c0e0d99761d3d69003875ddc91f8611959",
+    "experiments/postprocess_tpd_ner_v8_mprs_dch_formal800.py": "021183796745fc8d01a1d04891d6067e5ba52aea08cc2ea600127c20557b12e3",
+    "experiments/postprocess_tpd_ner_v8_mprs_dch_v2_formal800.py": "8ff64d5b513eccd785471503bb8ff7c98540863dda04617236de284a27bc6415",
+    "experiments/postprocess_tpd_ner_v8_mprs_dch_v3_formal800.py": "016d9ae6b061ed61a96fbd554d90e1390066bac0665cf40772cd40752ade4f49",
+    "experiments/run_tpd_ner_v8_mprs_dch_v3_formal800_1x5090_lane.sh": "5b33857082b6671741184e70a475060e0d6b5ba690b49527c68e256c404b064f",
+    "experiments/smoke_tpd_ner_v8_mprs_dch_v3.py": "8d27139f6f9a311977139263eacf6b5c58a3d89ca3080775b9b910d2917bdf27"
+  },
+  "structural_predecessor": "tpd_ner_v8_mprs_dch_v2_full_relay_on",
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "training_source_lock_sha256": "7cfeb600e1ff3720484a47e410a18da28bbddbe8ec93dc7fd6b2c2ce4e5dec93",
+  "upstream_v2_acceptance_source_lock_sha256": "33fa8b8b4b2d432ce668c9eb27b3fab0b030ba817e4b1b359e0eaf25f7c5f736",
+  "upstream_v2_training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "upstream_v2_training_source_lock_sha256": "d50f65f9969916fa835f267c8081547c146bd333b2682a482daad621c39b5123",
+  "variants": [
+    "tpd_ner_v8_mprs_dch_v3_full_relay_on"
+  ]
+}

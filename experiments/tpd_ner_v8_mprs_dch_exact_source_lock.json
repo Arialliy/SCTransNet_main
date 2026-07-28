@@ -1,0 +1,87 @@
+{
+  "candidate_family": "tpd_ner_v8_mprs_dch",
+  "dataset": "NUDT-SIRST",
+  "formal_contract": {
+    "amp": false,
+    "candidate_variants": [
+      "tpd_ner_v8_mprs_dch_full_relay_off",
+      "tpd_ner_v8_mprs_dch_full_relay_on"
+    ],
+    "cublas_workspace_config": ":4096:8",
+    "epochs": 800,
+    "eps": 1e-06,
+    "eval_every": 1,
+    "initialization_modes": [
+      "fresh",
+      "exact_resume"
+    ],
+    "relay_identity_source": "candidate_variant_suffix",
+    "relay_initialization_seed": 42,
+    "relay_width": 8,
+    "scheduler_restore": "identity_bound_manual_schedule_from_completed_epoch",
+    "split_seed": 20260722,
+    "training_seed": 42,
+    "workers": 0
+  },
+  "lock_kind": "training",
+  "official_training_index": "img_idx/train_NUDT-SIRST.txt",
+  "official_training_index_sha256": "e0a79f7c3d42548ba7d7dad9d2d336012b63a6bc5081e89e286f0f45036f8ec3",
+  "official_training_sample_count": 663,
+  "ordered_training_ids_sha256": "4cf3882265e4f0a55e80d58e5e53e5f9a12ed721b6995a42a5e8320ad6f51c75",
+  "policy": {
+    "cross_variant_exact_resume_forbidden": true,
+    "existing_manifest_overwrite_forbidden": true,
+    "fresh_or_exact_resume_only": true,
+    "gpu0_gpu1_used": false,
+    "multi_seed_scheduled": false,
+    "official_test_accessed": false,
+    "physical_gpus": [
+      2,
+      3
+    ],
+    "source_symlinks_forbidden": true,
+    "split_seed": 20260722,
+    "training_seed": 42
+  },
+  "schema": "sctransnet_tpd_ner_v8_mprs_dch_exact_source_lock_v1",
+  "source_count": 32,
+  "source_sha256": {
+    "dataset.py": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d",
+    "experiments/TPD_CLEAN_V8_MPRS_DCH_PREFLIGHT_AMENDMENT_V1.md": "8a8e4f0c5e7891a73b7e641c93f2f99558c0b0771babc741070d3fd6b8d21c6f",
+    "experiments/TPD_CLEAN_V8_MPRS_DCH_PROTOCOL.md": "abceb4cd3b8863d2d96eb0077ecdd7cef9691b8ece04cc6ebd4d618bc6ce66c3",
+    "experiments/TPD_NER_V8_MPRS_DCH_PROTOCOL.md": "d0dc07958b210d6a4caaf1062666ca81dc64be85899d331d5cef1fdd3a11b096",
+    "experiments/fingerprint_tpd_training_data.py": "26382e38e899bdf4f97b77c6671929c391decef6e4bf4ac40094a7d4e6b0bc7d",
+    "experiments/tpd_exact_epoch_journal.py": "c45406b70142b7073360a1dc26d15e09ad2ac5be32f2eebdbeecea58080c988b",
+    "experiments/tpd_exact_resume.py": "1735112631408257c9c8247acb382e3738e9068d68bcd4686371067429aca04b",
+    "experiments/tpd_exact_runner.py": "b8046a09d9f18c7c95b8394ee73975dc3b7b8b3aa5be247a200dcd12562ba2ea",
+    "experiments/tpd_exact_training_runtime.py": "df54fcd35af1ffcbf9648908fc23197caa7a41272a44b87a82ebd4679075ce20",
+    "experiments/tpd_extension_warm_start.py": "d8b4dca6b9e8b50420ae85cf8097491e491038410fa625b878c01c8fe03b9cbb",
+    "experiments/tpd_ner_runtime.py": "d6f936cf7c7ee011e2fcada3c278ac0a1cb881e4bdb8e14db5523e8822faa213",
+    "experiments/train_tpd_clean_v6.py": "fc82a32d685f506f9115c94854e72e823745dcf39914a06bc2af552a8fc6ce46",
+    "experiments/train_tpd_clean_v6_exact.py": "05c9a6211f8f6899df294cb2a52510e1ccb14551f602695dcf1b36c71ed1ba76",
+    "experiments/train_tpd_clean_v7_dch.py": "19930057f0965c52289ea5dba6af883266d4f48736b95196d3e3954c467e1554",
+    "experiments/train_tpd_clean_v7_dch_exact.py": "7483eb4eb49ccfffd51d5b708bcc4e5917175ca5b6b51590808e9379476d9fa2",
+    "experiments/train_tpd_clean_v8_mprs_dch.py": "f852b9fb8f6725c63d0907736418a799f979ad5ee44d5ad56cbf673cb676bd4c",
+    "experiments/train_tpd_clean_v8_mprs_dch_exact.py": "b723be8f1929cd84cf708ae2cf843f949e09d20b1b142022d7673958fed92a82",
+    "experiments/train_tpd_ner_v8_mprs_dch.py": "199b609109c049374e8e02eba593997486cbb821422d459b2b90eade7c320321",
+    "experiments/train_tpd_ner_v8_mprs_dch_exact.py": "37be7aae869ad51704293c08c54dd39568b890812d96104671dad756208b243d",
+    "experiments/train_tpd_pilot.py": "7532bdc3bcc777aa164e258ab21f78d38ed3a1eaa677a29c8256d900224a7f26",
+    "model/Config.py": "b7e3e67c379ef4638605ebe612336b0c3cdb1a97f4d6fe731dec80b4847d5596",
+    "model/SCTransNet.py": "5fb7ce711f190ead2bfcc910d2971266b2561e643c9f8a524d2032ffd48c0aeb",
+    "model/tpd.py": "18a5892edd18ab040e38f18c8d86a02bf3e50b7a4d12d0115ec9a97e8051c135",
+    "model/tpd_clean.py": "ca61b4035bc32c99d5862e08c48096e4892e90c0de1d1f3bdf12d683c94597f2",
+    "model/tpd_clean_v6.py": "22cec7b67b5f6b726366ae4b349f85fa09101896465f1bf8467ea6fbd76d90ab",
+    "model/tpd_clean_v7_dch.py": "a6d4052ef9fd2b68e11dbeb515439551715f9a1d52a7189f0cc169a3ccee4f86",
+    "model/tpd_clean_v8_mprs_dch.py": "39e7b1618ea9f594f4abecc284afd0d845132218e2fab3657dbb957c78703c19",
+    "model/tpd_ner_v8_mprs_dch.py": "d0d9dd226c64689f118b5d179c5415a82d26a6c803337a0f02aaaba789491acd",
+    "model/tpd_relay.py": "7b69d8e7cc62a5883355c516bdc0d30ca37036613d96d4a8ba54f51ee8744345",
+    "model/tpd_sctransnet.py": "cf887b55411da8219f32b8c2a5e248b5ffec403f13146a6a1806fec4e1c014af",
+    "utils.py": "afb6fc221072ddd082b53ccda132232bc9089afd0458d8f0e47a39b9c1e25c13",
+    "warmup_scheduler.py": "d7ebc3f9568ebd2da6b141d2923dba22c70d523099320e8aee5e769426b62493"
+  },
+  "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+  "variants": [
+    "tpd_ner_v8_mprs_dch_full_relay_off",
+    "tpd_ner_v8_mprs_dch_full_relay_on"
+  ]
+}
