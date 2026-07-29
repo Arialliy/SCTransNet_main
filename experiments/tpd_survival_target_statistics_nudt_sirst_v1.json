@@ -1,0 +1,63 @@
+{
+  "cells_per_image": 256,
+  "dataset": "NUDT-SIRST",
+  "full_image_equals_training_crop": true,
+  "generator": {
+    "path": "experiments/compute_tpd_survival_target_statistics.py",
+    "sha256": "8d6eb33988aaf651210755389fcc3d2b28e9d149356e46106b721ef70df48188"
+  },
+  "grid_size": [
+    16,
+    16
+  ],
+  "image_size_order": [
+    "height",
+    "width"
+  ],
+  "image_sizes": [
+    [
+      256,
+      256
+    ]
+  ],
+  "inputs": {
+    "aggregate_input_data_sha256": "804206d3b3778c56d115e8e09430b4f44ab8e5ecf343c26f364717bf8a13cabf",
+    "mask_extension": ".png",
+    "mask_file_count": 530,
+    "mask_total_file_bytes": 260749,
+    "masks_directory": "datasets/NUDT-SIRST/masks",
+    "ordered_mask_data_sha256": "f4935d5be442cdf5fe96cd7a4c4b13829fde42f920131aa3613d5d50780ca1e7",
+    "ordered_mask_data_sha256_contract": "sha256(length-prefixed UTF-8 field labels and raw values; used_train_ids order)",
+    "ordered_mask_manifest_sha256": "3dd66f9092933049e1f36864c66d8a1bf0de33a75a53d1895602913b0f77ea18",
+    "split_json_path": "experiments/results/tpd_ner_v8_mprs_dch_v4_tail_aware_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_v4_tail_aware_full_relay_on/seed_42_formal800_exact_v4_tail_aware_seed42/split.json",
+    "split_json_sha256": "391bca28848038d6386a6c70cbaeb902ba71a8dc73a4a134441ac2aa5b438828",
+    "split_recorded_used_train_ids_sha256": "9565f584a5429fd1e5f0451b2d9496877f6f887493dd4d9954b4e976989f245b",
+    "used_train_ids_field": "used_train_ids"
+  },
+  "mask_binarization": "float(mask)/255 > 0.5",
+  "mask_uint8_equivalent": "value >= 128",
+  "negative_cells": 134367,
+  "patch_size": 256,
+  "pool_ceil_mode": false,
+  "pool_dilation": 1,
+  "pool_kernel": 16,
+  "pool_padding": 0,
+  "pool_stride": 16,
+  "positive_cells": 1313,
+  "schema": "sctransnet_tpd_survival_target_statistics_v1",
+  "split_seed": 20260722,
+  "survival_pos_weight": 102.33587204874334,
+  "survival_pos_weight_formula": "negative_cells / positive_cells",
+  "total_cells": 135680,
+  "train_image_count": 530,
+  "training_seed": 42,
+  "transform_preserves_positive_cell_count": true,
+  "used_train_ids_sha256": "9565f584a5429fd1e5f0451b2d9496877f6f887493dd4d9954b4e976989f245b",
+  "used_train_ids_sha256_contract": "sha256(UTF-8 '\\n'.join(sorted(used_train_ids)))",
+  "validation": {
+    "all_masks_256x256": true,
+    "all_masks_regular_png_l": true,
+    "formal_v1_expectations_checked": true,
+    "official_test_accessed": false
+  }
+}

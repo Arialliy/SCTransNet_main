@@ -8,12 +8,14 @@ __pycache__/
 
 # Training outputs, checkpoints, and logs
 /experiments/results/
+/experiments/runtime/
 /log/
 /otherlogs/
 /analysis/results/
 /analysis/smoke_results/
 *.pth
 *.pth.tar
+*.orig
 events.out.tfevents.*
 
 # Local Codex handoff context

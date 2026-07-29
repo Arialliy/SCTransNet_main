@@ -9,7 +9,64 @@ patch embedding 的目标保真下采样（Target-Preserving Downsampling, TPD�
 > TPD-Clean-v6 与 V7-DCH 正式实验使用两个随机种子；V8-MPRS-DCH + NER
 > V1/V2/V3 筛选只使用 seed 42。所有结果都不足以形成跨数据集稳定性结论。
 
-## 最新状态：V8-MPRS-DCH + NER V3
+## 最新状态：NER V4 与 Target Survival
+
+NER V4 Tail-Aware 保留 V8-MPRS-DCH tokenizer、五个 evidence nodes、
+`q4 → q3 → q2` 窄中继和原 SCTransNet decoder，只调整 stage-wise
+DC offset 的空间作用域。零训练 counterfactual 从 `legacy_global`、
+`direct_tail` 和 `complement_tail` 中选择了 target-protective
+`complement_tail`：
+
+\[
+M_s=\frac{1}{\pi}\arctan\left[\pi\left(Z_s+d_s(1-P_s)\right)\right],
+\quad s\in\{2,3\}.
+\]
+
+### NER V4 正式结果
+
+V4 已完成 seed 42、NUDT-SIRST 530/133 内部划分、FP32、800-epoch 正式训练。
+
+| Checkpoint | Epoch | Pd ↑ | Fa ↓ | mIoU ↑ | tiny-Pd | 错误目标 |
+|---|---:|---:|---:|---:|---:|---:|
+| Pd-primary `best` | 422 | **189/189** | 7.5720e-6 | 0.926418 | 39/39 | 14 |
+| mIoU-secondary `best_miou` | 489 | 188/189 | **4.2449e-6** | **0.938178** | 39/39 | **4** |
+
+V4 的五预算包络为 `[0, 188, 189, 189, 189]`；两个 checkpoint 都进入
+五模型全局固定点 Pareto frontier，后四个 Fa budget 为全局最优或并列最优，
+但严格 `Fa≤1e-6` 区域仍弱于 V1。正式裁决为
+**`RELATIVE_MODEL_IMPROVEMENT_CONFIRMED_WITH_TRADEOFF`**：确认相对改进，
+但不支持统一支配、跨种子稳定性或跨数据集结论。
+
+### Target Survival Supervision（TSS）
+
+TSS 在 V4 的 `emb1`、`emb2` stride-16 endpoint 上增加两个训练期
+`1×1 Conv` presence head，以 max-pooled target-presence 提供辅助监督。
+两个 head 共增加 98 个训练参数，不进入分割前向路径，并可从正式推理模型中完全移除。
+
+TSS-on（survival loss 权重 `0.005`）与等结构 TSS-control（权重 `0`）均从
+V4 `best_miou` checkpoint warm start，并已完成 seed-42、800-epoch 正式训练。
+固定阈值 `0.5` 的内部验证结果如下：
+
+| 变体/Checkpoint | Epoch | Pd ↑ | Fa ↓ | mIoU ↑ | tiny-Pd | 错误目标 |
+|---|---:|---:|---:|---:|---:|---:|
+| TSS-on Pd/mIoU-best | 3 | 188/189 | 4.1302e-6 | 0.936870 | 39/39 | 5 |
+| TSS-control Pd-best | 37 | 188/189 | **4.0155e-6** | 0.934370 | 39/39 | **4** |
+| TSS-control mIoU-best | 3 | 188/189 | 4.8186e-6 | **0.940091** | 39/39 | 6 |
+
+这些固定阈值结果没有显示 TSS-on 对 control 的统一优势：TSS-on 相比 control
+Pd-best 有更高 mIoU，但 Fa 和错误目标略高；control 的 mIoU-best 又取得更高
+mIoU。正式 Pd–Fa sweep、相对/Pareto 汇总和最终分级尚未发布，因此当前只报告
+训练完成和固定阈值事实，不提前写成 `RELATIVE_IMPROVED`、`PARETO_MIXED_TRADEOFF`
+或 `DOMINATED`。
+
+最新实现与方案：
+
+- [`model/tpd_ner_v8_mprs_dch_v4_tail_aware.py`](model/tpd_ner_v8_mprs_dch_v4_tail_aware.py)
+- [`model/tpd_ner_v8_mprs_dch_v4_tail_aware_survival.py`](model/tpd_ner_v8_mprs_dch_v4_tail_aware_survival.py)
+- [`experiments/train_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_exact.py`](experiments/train_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_exact.py)
+- [`SCTransNet_TPD8_NER4_Target_Survival_集成方案与代码修改计划.md`](SCTransNet_TPD8_NER4_Target_Survival_集成方案与代码修改计划.md)
+
+## 历史筛选：V8-MPRS-DCH + NER V1/V2/V3
 
 V8-MPRS-DCH（Mass-Preserving Phase-Resolved Saliency with Deferred Context
 Headroom）保持 Keep–Context–Saliency 三源主线，只将 V7 的标量 Saliency
@@ -293,6 +350,10 @@ model/tpd_clean_v8_mprs_dch.py       # V8 相位分辨 Saliency
 model/tpd_ner_v8_mprs_dch.py         # NER V1
 model/tpd_ner_v8_mprs_dch_v2.py      # NER V2
 model/tpd_ner_v8_mprs_dch_v3.py      # NER V3
+model/tpd_ner_v8_mprs_dch_v4_tail_aware.py
+                                     # NER V4 Tail-Aware
+model/tpd_ner_v8_mprs_dch_v4_tail_aware_survival.py
+                                     # V4 + 训练期 Target Survival heads
 experiments/train_tpd_pilot.py       # 无官方测试泄漏的统一训练 runner
 experiments/train_tpd_clean_v6_exact.py
                                      # V6 精确续训正式入口
@@ -300,6 +361,8 @@ experiments/train_tpd_clean_v7_dch_exact.py
                                      # V7-DCH 精确续训正式入口
 experiments/train_tpd_ner_v8_mprs_dch_v3_exact.py
                                      # V8 + NER V3 正式训练入口
+experiments/train_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_exact.py
+                                     # V4 + TSS 精确续训入口
 experiments/evaluate_pd_fa_sweep.py  # Pd–Fa threshold sweep
 experiments/summarize_tpd_pd_fa.py   # Pd–Fa 汇总
 experiments/decide_tpd_mainline_4x5090.py
@@ -337,8 +400,11 @@ tests/                                # 模块与决策策略测试
 ## 结果边界
 
 README 中的初代 TPD 结果为 seed-42 内部验证实验，TPD-Clean-v6 与 V7-DCH
-结果为 seed `42/3407` 内部验证实验，V8 + NER V1/V2/V3 为 seed-42 内部验证
-筛选。它们均不等同于 NUDT-SIRST 官方测试成绩，也不构成跨数据集稳定性结论。
+结果为 seed `42/3407` 内部验证实验，V8 + NER V1/V2/V3/V4 与 TSS 为
+seed-42 内部验证筛选。它们均不等同于 NUDT-SIRST 官方测试成绩，也不构成
+跨数据集稳定性结论。
 V6、V7-DCH 均为 `ENGINEERING_GATE_FAIL`；V8 + NER V1/V2/V3 均为
-`RETURN_TO_MODEL_OPTIMIZATION`。不得将局部优点描述成稳定优越性。任何后续
+`RETURN_TO_MODEL_OPTIMIZATION`；V4 为
+`RELATIVE_MODEL_IMPROVEMENT_CONFIRMED_WITH_TRADEOFF`，TSS 的最终 Pd–Fa
+相对裁决仍待发布。不得将局部优点描述成稳定优越性。任何后续
 论文级声明都应建立在完整审计、多种子、多数据集和独立官方测试结果之上。
