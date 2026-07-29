@@ -1,0 +1,37 @@
+{
+  "candidate_family": "tpd_ner_v4_qfg_v2_croa",
+  "lock_kind": "operational_closure",
+  "official_test_accessed": false,
+  "policy": {
+    "canonical_pretty_json": true,
+    "idempotent_existing_identical_is_success": true,
+    "official_test_accessed": false,
+    "overwrite_forbidden": true,
+    "runtime_sources_regular_non_symlink_files": true,
+    "runtime_sources_repo_local": true,
+    "source_lock_self_excluded": true,
+    "upstream_15_source_lock_unchanged": true,
+    "write_once": true
+  },
+  "receipt_contract": {
+    "binding_scope": "schema_and_contract_path_only",
+    "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/fallback_control/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_fallback_receipt.json",
+    "receipt_content_in_source_lock": false,
+    "receipt_may_be_absent_at_freeze_time": true,
+    "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_fallback_receipt_v1"
+  },
+  "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_operational_closure_source_lock_v2",
+  "source_count": 4,
+  "source_sha256": {
+    "experiments/control_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_fallback.py": "53394f8c38be3e6a5bf94045db92e3b985aec26a21064a550c3c613887485da3",
+    "experiments/generate_tpd_ner_v4_qfg_v2_croa_reproducibility_manifest.py": "548496a20bfac53280a4092e082111619d1a42e2b40d110da16e8621aa922d45",
+    "experiments/generate_tpd_ner_v4_qfg_v2_croa_reproducibility_manifest_v2.py": "35f2a68873122fe016972376a3f13d5d3fda260a49991ec88f2f682dacf40673",
+    "experiments/publish_tpd_ner_v4_qfg_v2_croa_default_operating_point_v2.py": "96ba295cb6106a09a870337a7d01fde9d694d867ec14a89aa1692fe31f18fe4b"
+  },
+  "status": "complete",
+  "upstream_posttraining_closure_source_lock": {
+    "path": "experiments/tpd_ner_v4_qfg_v2_croa_posttraining_closure_source_lock.json",
+    "sha256": "315f091b75078e65b871946cecae92893e8915bb3951b6fc4dcf3a52c984cbbd",
+    "source_count": 15
+  }
+}

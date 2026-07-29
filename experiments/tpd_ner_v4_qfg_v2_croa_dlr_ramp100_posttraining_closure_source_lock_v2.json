@@ -1,0 +1,199 @@
+{
+  "candidate_family": "tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800",
+  "final_evaluation_source_sha256": {
+    "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_pd_fa.py": "ae0ffd138e161db1aa20e91c8da5f884b832598454eac9577386331ddd7df90a",
+    "experiments/run_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800_eval_lane.sh": "ec81eca1425e256a546c1f68463a968a5cdfadbec4012f75d846148f3588a588",
+    "experiments/run_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800_sweeps_2x5090.sh": "56c79b29baceb4599f1a7002c3780b5cee8c770bae84e626c98dc4f08cb9850d"
+  },
+  "idempotent_existing_identical_is_success": true,
+  "lock_kind": "post_training_closure",
+  "official_test_accessed": false,
+  "overwrite_forbidden": true,
+  "policy_summary": {
+    "aligned_locations": [
+      "fixed_threshold_0_5",
+      "fa_budget:1e-06",
+      "fa_budget:5e-06",
+      "fa_budget:1e-05",
+      "fa_budget:5e-05",
+      "fa_budget:0.0001"
+    ],
+    "checkpoint_filenames": {
+      "miou_secondary": "best_miou.pth.tar",
+      "pd_primary": "best.pth.tar"
+    },
+    "checkpoint_roles": [
+      "pd_primary",
+      "miou_secondary"
+    ],
+    "closure_lock_generation": 2,
+    "cross_checkpoint_metric_stitching": false,
+    "cross_checkpoint_threshold_stitching": false,
+    "cross_method_metric_stitching": false,
+    "dataset": "NUDT-SIRST",
+    "deployment_selection": {
+      "pareto_filter": {
+        "fa": "minimize",
+        "false_objects_per_image": "minimize",
+        "miou": "maximize",
+        "pd": "maximize",
+        "tiny_pd": "maximize"
+      },
+      "tiebreak": "objective_priority_then_pd_primary_then_fixed0.5_and_ascending_budgets_then_threshold",
+      "unit": "one_complete_checkpoint_local_operating_point"
+    },
+    "final_evaluation_source_sha256": {
+      "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_pd_fa.py": "ae0ffd138e161db1aa20e91c8da5f884b832598454eac9577386331ddd7df90a",
+      "experiments/run_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800_eval_lane.sh": "ec81eca1425e256a546c1f68463a968a5cdfadbec4012f75d846148f3588a588",
+      "experiments/run_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800_sweeps_2x5090.sh": "56c79b29baceb4599f1a7002c3780b5cee8c770bae84e626c98dc4f08cb9850d"
+    },
+    "method_selection": {
+      "aligned_location_count": 12,
+      "equivalence_tiebreak": "inference_complexity_then_frozen_method_order",
+      "primary": "sum_of_per_location_lexicographic_ranks:minimize",
+      "quaternary": "aligned_pairwise_strict_dominance_count:maximize",
+      "secondary": "aligned_first_place_count:maximize",
+      "tertiary": "aligned_pareto_membership_count:maximize",
+      "unit": "same_role_same_location_atomic_point",
+      "uses_all_aligned_locations": true
+    },
+    "methods": [
+      "baseline",
+      "v4",
+      "a_control",
+      "b_tss",
+      "c_qfg_only",
+      "d_tss_qfg",
+      "e_qfg_dlr",
+      "f_tss_qfg_dlr"
+    ],
+    "objective_priority": [
+      "pd:maximize",
+      "fa:minimize",
+      "miou:maximize",
+      "tiny_pd:maximize",
+      "false_objects_per_image:minimize"
+    ],
+    "official_test_accessed": false,
+    "operating_point_sources": {
+      "fa_budget_keys": [
+        "1e-06",
+        "5e-06",
+        "1e-05",
+        "5e-05",
+        "0.0001"
+      ],
+      "fa_budgets": [
+        1e-06,
+        5e-06,
+        1e-05,
+        5e-05,
+        0.0001
+      ],
+      "fixed_threshold": 0.5
+    },
+    "reference_closure_lock_sha256": "315f091b75078e65b871946cecae92893e8915bb3951b6fc4dcf3a52c984cbbd",
+    "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_deployment_point_policy_v1",
+    "split_seed": 20260722,
+    "supersession": {
+      "old_lock_must_not_be_used": true,
+      "old_lock_retained": true,
+      "reason": "The checkpoint-local evaluator and its two execution lanes were hardened after the v1 freeze; v1 therefore binds an earlier evaluator and is retained only as immutable history.",
+      "replacement_schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock_v2",
+      "superseded_path": "/home/ly/SCTransNet_main/experiments/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock.json",
+      "superseded_sha256": "c0af9b9001f0ed4814424700d3797251dd1cb21832c9e7cd95c3a7736287baf5",
+      "supersedes_schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock_v1"
+    },
+    "training_seed": 42,
+    "training_source_lock_sha256": "88b4839b40484c881544614e60675c4d2805a4fd6de1cc2f0aad28bdcb1395e8"
+  },
+  "policy_summary_sha256": "531df7d9f05d86f8a14c7d73156a693979be84e9bb1f975f5121b59769431e90",
+  "reference_closure_source_lock": {
+    "path": "/home/ly/SCTransNet_main/experiments/tpd_ner_v4_qfg_v2_croa_posttraining_closure_source_lock.json",
+    "sha256": "315f091b75078e65b871946cecae92893e8915bb3951b6fc4dcf3a52c984cbbd"
+  },
+  "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock_v2",
+  "source_count": 12,
+  "source_sha256": {
+    "experiments/compare_tpd_ner_v4_qfg_v2_croa_dlr_ramp100.py": "176f35b49d02dbdd96f817704ce58249bbc5b3991ccbc9f2fd78aa7ff8048042",
+    "experiments/deploy_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800.py": "3a2d8502405065cc85080efdb432b8c3a052e4a5fb21fd8f6e1438c90f09911f",
+    "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_pd_fa.py": "ae0ffd138e161db1aa20e91c8da5f884b832598454eac9577386331ddd7df90a",
+    "experiments/export_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_to_inference.py": "e920493b89be58d110ecee4bff856bb1311b804080e2f29ab94e877915c4bc53",
+    "experiments/export_tpd_ner_v4_qfg_v2_croa_to_inference.py": "b76b51fd02143660646acea4d9574e445c4913abb8cf1b33e4735c4008a433d8",
+    "experiments/export_tpd_ner_v4_survival_to_inference.py": "5a45ce975398a3f20ae80b626035939e34eeab502e45b4a9e0298bc6086e425e",
+    "experiments/freeze_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure.py": "eac7b5ffdb9f94834b0205ad6d2b3a14bfaee64c2ad21836bf4b0b2e159bd451",
+    "experiments/postprocess_tpd_ner_v4_qfg_v2_croa_formal800.py": "5fb0aa3f14aeb807b98b3344ab3691e58dec837b9aac1cdad5ec80329e2714ff",
+    "experiments/run_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800_eval_lane.sh": "ec81eca1425e256a546c1f68463a968a5cdfadbec4012f75d846148f3588a588",
+    "experiments/run_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800_sweeps_2x5090.sh": "56c79b29baceb4599f1a7002c3780b5cee8c770bae84e626c98dc4f08cb9850d",
+    "experiments/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_policy.py": "53bdf2eda71328c289b9eb6f10d46d7206215e990833c5d5c1be9bfdc4023b39",
+    "experiments/tpd_ner_v4_qfg_v2_croa_posttraining_policy.py": "0f28ed799c7feea0d855bc5655af51f4e8d0bcf7ee3239ece4e18c5b66198beb"
+  },
+  "status": "complete",
+  "supersession": {
+    "old_lock_must_not_be_used": true,
+    "old_lock_retained": true,
+    "reason": "The checkpoint-local evaluator and its two execution lanes were hardened after the v1 freeze; v1 therefore binds an earlier evaluator and is retained only as immutable history.",
+    "replacement_schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock_v2",
+    "superseded_path": "/home/ly/SCTransNet_main/experiments/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock.json",
+    "superseded_sha256": "c0af9b9001f0ed4814424700d3797251dd1cb21832c9e7cd95c3a7736287baf5",
+    "supersedes_schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock_v1"
+  },
+  "sweep_public_interface": {
+    "accepted_evaluation_schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_checkpoint_local_pd_fa_v1",
+    "checkpoints": {
+      "best.pth.tar": "best_validation_pd_primary",
+      "best_miou.pth.tar": "best_validation_miou_secondary"
+    },
+    "cross_checkpoint_point_pooling": false,
+    "evaluated_checkpoint_count": 1,
+    "fa_budget_keys": [
+      "1e-06",
+      "5e-06",
+      "1e-05",
+      "5e-05",
+      "0.0001"
+    ],
+    "fa_budgets": [
+      1e-06,
+      5e-06,
+      1e-05,
+      5e-05,
+      0.0001
+    ],
+    "fixed_threshold": 0.5,
+    "required_fields": [
+      "schema",
+      "dataset",
+      "seed",
+      "split_seed",
+      "variant",
+      "run_directory",
+      "checkpoint",
+      "checkpoint_role",
+      "checkpoint_epoch",
+      "checkpoint_sha256",
+      "validation_count",
+      "validation_split_sha256",
+      "fixed_threshold_0_5",
+      "best_points_under_fa_budget",
+      "points",
+      "threshold_selection_scope",
+      "cross_checkpoint_point_pooling",
+      "evaluated_checkpoint_count",
+      "official_test_accessed",
+      "run_identity",
+      "source_checkpoint_identity"
+    ],
+    "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_public_sweep_interface_v1",
+    "threshold_selection_scope": "single_checkpoint_only",
+    "variants": [
+      "qfg_dlr",
+      "tss_qfg_dlr"
+    ]
+  },
+  "training_source_lock": {
+    "path": "/home/ly/SCTransNet_main/experiments/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_exact_source_lock.json",
+    "sha256": "88b4839b40484c881544614e60675c4d2805a4fd6de1cc2f0aad28bdcb1395e8"
+  },
+  "write_once": true
+}

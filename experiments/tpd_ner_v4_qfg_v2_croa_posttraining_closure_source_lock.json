@@ -1,0 +1,111 @@
+{
+  "candidate_family": "tpd_ner_v4_qfg_v2_croa_formal800",
+  "dataset": "NUDT-SIRST",
+  "frozen_authority": {
+    "marker_path": "experiments/results/tpd_ner_v8_mprs_dch_v4_tail_aware_exact_v1/NUDT-SIRST/comparison/POSTPROCESS_COMPLETE.json",
+    "marker_sha256": "be222b88b22a558ec2c8588d5e863da630f5c6af6d660de2c5b86b55547edc95",
+    "path": "experiments/results/tpd_ner_v8_mprs_dch_v4_tail_aware_exact_v1/NUDT-SIRST/comparison/tpd_ner_v8_mprs_dch_v4_tail_aware_formal800_comparison.json",
+    "sha256": "fdcb7dd0a1f591fcd6446a806d007ed8f07b1fd9e217549318dbd1ee1a69e968"
+  },
+  "lock_kind": "post_training_closure",
+  "official_test_accessed": false,
+  "policy": {
+    "deployment_manifest_must_record_lock_sha256": true,
+    "overwrite_forbidden": true,
+    "runtime_sources_regular_non_symlink_files": true,
+    "runtime_sources_repo_local": true,
+    "source_lock_self_excluded": true,
+    "terminal_reports_must_record_lock_sha256": true,
+    "training_lock_unchanged": true,
+    "write_once": true
+  },
+  "policy_summary": {
+    "candidate_unit": "one_complete_checkpoint_local_operating_point",
+    "checkpoint_candidates_compared_as_atomic_points": true,
+    "checkpoint_filenames": {
+      "miou_secondary": "best_miou.pth.tar",
+      "pd_primary": "best.pth.tar"
+    },
+    "checkpoint_roles": [
+      "pd_primary",
+      "miou_secondary"
+    ],
+    "cross_checkpoint_metric_stitching": false,
+    "cross_checkpoint_threshold_stitching": false,
+    "dataset": "NUDT-SIRST",
+    "export_policy": {
+      "qfg_methods": "strict_head_free_qfg_export",
+      "tss_inference_state": "removed_for_qfg_export",
+      "v4_fallback": "write_once_native_checkpoint_copy"
+    },
+    "frontier_filter": {
+      "epsilon": 1e-12,
+      "objective_directions": {
+        "fa": "minimize",
+        "false_objects_per_image": "minimize",
+        "miou": "maximize",
+        "pd": "maximize",
+        "tiny_pd": "maximize"
+      }
+    },
+    "frontier_tiebreak_order": [
+      "pd:maximize",
+      "fa:minimize",
+      "miou:maximize",
+      "tiny_pd:maximize",
+      "false_objects_per_image:minimize",
+      "checkpoint_role:pd_primary_before_miou_secondary",
+      "source:fixed0.5_then_fa_budget_ascending",
+      "threshold:minimize"
+    ],
+    "official_test_accessed": false,
+    "operating_point_sources": {
+      "fa_budget_keys": [
+        "1e-06",
+        "5e-06",
+        "1e-05",
+        "5e-05",
+        "0.0001"
+      ],
+      "fa_budgets": [
+        1e-06,
+        5e-06,
+        1e-05,
+        5e-05,
+        0.0001
+      ],
+      "fixed_threshold": 0.5
+    },
+    "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_deployment_point_policy_v1",
+    "split_seed": 20260722,
+    "training_seed": 42,
+    "training_source_lock_sha256": "8d55464851db9441383854189eff64c05daf25e7ff3502c6c67cf06401996478"
+  },
+  "policy_summary_sha256": "e134879e8797a96a653a6d45c8ecc0a4344ff7f519097cc8639737d1fc4c152d",
+  "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_posttraining_closure_source_lock_v1",
+  "source_count": 15,
+  "source_sha256": {
+    "experiments/compare_tss_qfg_v2_croa_factorial.py": "401f6838c649955b975005721a80d5ab80a6b652939c2bd4c42832cc249f56cb",
+    "experiments/deploy_tpd_ner_v4_qfg_v2_croa_formal800.py": "a4590fdd8b66ca7cd7fcd598ce0aae2a62593c7a04743a582abbda71ebab07c5",
+    "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+    "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_pd_fa.py": "687617a96aeec7861b99d760f520b801abd46e3c820a12cc967e326130cf450a",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_v4_tail_aware_pd_fa.py": "926fd5ad648bd10d9814f077d69513f62cdac819bafbbffd46d0b3cb611609f9",
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_pd_fa.py": "3d1559101f498a49d9a2afdb8bc49c8110ab36a03e33c5da9502a6d44086fa61",
+    "experiments/export_tpd_ner_v4_qfg_v2_croa_to_inference.py": "b76b51fd02143660646acea4d9574e445c4913abb8cf1b33e4735c4008a433d8",
+    "experiments/finalize_tpd_ner_v4_qfg_v2_croa_formal800_2x5090.sh": "d25cafe00fa5a3fd2002a8dd93b23617e12100dca4d523d9bd4522f029b92091",
+    "experiments/freeze_tpd_ner_v4_qfg_v2_croa_posttraining_closure.py": "4067a4fb3003b69fb9d7f8ab6c2a180d7757ed820145f1b519aade8044109b8f",
+    "experiments/launch_tpd_ner_v4_qfg_v2_croa_formal800_finalizer_2x5090.sh": "a3cf58ffe5a11cf1c87a533e469c928dee2622c1526fbdb247a58e050fe24c66",
+    "experiments/postprocess_tpd_ner_v4_qfg_v2_croa_formal800.py": "5fb0aa3f14aeb807b98b3344ab3691e58dec837b9aac1cdad5ec80329e2714ff",
+    "experiments/run_tpd_ner_v4_qfg_v2_croa_formal800_eval_lane.sh": "c4b1d603fb162cd2f47c639e3658134ed462b898c4186698eaf79ff771ad7d61",
+    "experiments/run_tpd_ner_v4_qfg_v2_croa_formal800_sweeps_2x5090.sh": "4972da94e89d0c9b3a30b597612fb14b27ec4ca193a700d488444db7f55492c8",
+    "experiments/tpd_ner_v4_qfg_v2_croa_posttraining_policy.py": "0f28ed799c7feea0d855bc5655af51f4e8d0bcf7ee3239ece4e18c5b66198beb"
+  },
+  "split_seed": 20260722,
+  "status": "complete",
+  "training_seed": 42,
+  "training_source_lock": {
+    "path": "experiments/tpd_ner_v4_qfg_v2_croa_exact_source_lock_v2_optimized.json",
+    "sha256": "8d55464851db9441383854189eff64c05daf25e7ff3502c6c67cf06401996478"
+  }
+}

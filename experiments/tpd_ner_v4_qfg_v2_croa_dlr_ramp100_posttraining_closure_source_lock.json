@@ -1,0 +1,168 @@
+{
+  "candidate_family": "tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800",
+  "idempotent_existing_identical_is_success": true,
+  "lock_kind": "post_training_closure",
+  "official_test_accessed": false,
+  "overwrite_forbidden": true,
+  "policy_summary": {
+    "aligned_locations": [
+      "fixed_threshold_0_5",
+      "fa_budget:1e-06",
+      "fa_budget:5e-06",
+      "fa_budget:1e-05",
+      "fa_budget:5e-05",
+      "fa_budget:0.0001"
+    ],
+    "checkpoint_filenames": {
+      "miou_secondary": "best_miou.pth.tar",
+      "pd_primary": "best.pth.tar"
+    },
+    "checkpoint_roles": [
+      "pd_primary",
+      "miou_secondary"
+    ],
+    "cross_checkpoint_metric_stitching": false,
+    "cross_checkpoint_threshold_stitching": false,
+    "cross_method_metric_stitching": false,
+    "dataset": "NUDT-SIRST",
+    "deployment_selection": {
+      "pareto_filter": {
+        "fa": "minimize",
+        "false_objects_per_image": "minimize",
+        "miou": "maximize",
+        "pd": "maximize",
+        "tiny_pd": "maximize"
+      },
+      "tiebreak": "objective_priority_then_pd_primary_then_fixed0.5_and_ascending_budgets_then_threshold",
+      "unit": "one_complete_checkpoint_local_operating_point"
+    },
+    "method_selection": {
+      "aligned_location_count": 12,
+      "equivalence_tiebreak": "inference_complexity_then_frozen_method_order",
+      "primary": "sum_of_per_location_lexicographic_ranks:minimize",
+      "quaternary": "aligned_pairwise_strict_dominance_count:maximize",
+      "secondary": "aligned_first_place_count:maximize",
+      "tertiary": "aligned_pareto_membership_count:maximize",
+      "unit": "same_role_same_location_atomic_point",
+      "uses_all_aligned_locations": true
+    },
+    "methods": [
+      "baseline",
+      "v4",
+      "a_control",
+      "b_tss",
+      "c_qfg_only",
+      "d_tss_qfg",
+      "e_qfg_dlr",
+      "f_tss_qfg_dlr"
+    ],
+    "objective_priority": [
+      "pd:maximize",
+      "fa:minimize",
+      "miou:maximize",
+      "tiny_pd:maximize",
+      "false_objects_per_image:minimize"
+    ],
+    "official_test_accessed": false,
+    "operating_point_sources": {
+      "fa_budget_keys": [
+        "1e-06",
+        "5e-06",
+        "1e-05",
+        "5e-05",
+        "0.0001"
+      ],
+      "fa_budgets": [
+        1e-06,
+        5e-06,
+        1e-05,
+        5e-05,
+        0.0001
+      ],
+      "fixed_threshold": 0.5
+    },
+    "reference_closure_lock_sha256": "315f091b75078e65b871946cecae92893e8915bb3951b6fc4dcf3a52c984cbbd",
+    "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_deployment_point_policy_v1",
+    "split_seed": 20260722,
+    "training_seed": 42,
+    "training_source_lock_sha256": "88b4839b40484c881544614e60675c4d2805a4fd6de1cc2f0aad28bdcb1395e8"
+  },
+  "policy_summary_sha256": "67b235182f7cecb51eb358c5e076d1ee2ccf9f06ed9c146a31d3b78074c753bd",
+  "reference_closure_source_lock": {
+    "path": "/home/ly/SCTransNet_main/experiments/tpd_ner_v4_qfg_v2_croa_posttraining_closure_source_lock.json",
+    "sha256": "315f091b75078e65b871946cecae92893e8915bb3951b6fc4dcf3a52c984cbbd"
+  },
+  "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure_source_lock_v1",
+  "source_count": 10,
+  "source_sha256": {
+    "experiments/compare_tpd_ner_v4_qfg_v2_croa_dlr_ramp100.py": "66a89aed32b3048791144bc1659fbe6a2c7618d54279c28ff709c30d7cee7558",
+    "experiments/deploy_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_formal800.py": "469bfc0c8eae8d4b97a90c14d1767de6851d5d9a354c3f828598361e03930972",
+    "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_pd_fa.py": "7272d8282819dc181c79b93457035d7aa15e9f4999e5aef86676980ee099a52a",
+    "experiments/export_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_to_inference.py": "e920493b89be58d110ecee4bff856bb1311b804080e2f29ab94e877915c4bc53",
+    "experiments/export_tpd_ner_v4_qfg_v2_croa_to_inference.py": "b76b51fd02143660646acea4d9574e445c4913abb8cf1b33e4735c4008a433d8",
+    "experiments/export_tpd_ner_v4_survival_to_inference.py": "5a45ce975398a3f20ae80b626035939e34eeab502e45b4a9e0298bc6086e425e",
+    "experiments/freeze_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_closure.py": "6193268393193ff6ed8c5f856f1dd83c42244e0ef5e2fdee4b667b26c80e2d1c",
+    "experiments/postprocess_tpd_ner_v4_qfg_v2_croa_formal800.py": "5fb0aa3f14aeb807b98b3344ab3691e58dec837b9aac1cdad5ec80329e2714ff",
+    "experiments/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_posttraining_policy.py": "6741a64bf7eb1a5d4b18e0e193d1358920e43e64058f7bee98822f50f8e684f6",
+    "experiments/tpd_ner_v4_qfg_v2_croa_posttraining_policy.py": "0f28ed799c7feea0d855bc5655af51f4e8d0bcf7ee3239ece4e18c5b66198beb"
+  },
+  "status": "complete",
+  "sweep_public_interface": {
+    "accepted_evaluation_schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_checkpoint_local_pd_fa_v1",
+    "checkpoints": {
+      "best.pth.tar": "best_validation_pd_primary",
+      "best_miou.pth.tar": "best_validation_miou_secondary"
+    },
+    "cross_checkpoint_point_pooling": false,
+    "evaluated_checkpoint_count": 1,
+    "fa_budget_keys": [
+      "1e-06",
+      "5e-06",
+      "1e-05",
+      "5e-05",
+      "0.0001"
+    ],
+    "fa_budgets": [
+      1e-06,
+      5e-06,
+      1e-05,
+      5e-05,
+      0.0001
+    ],
+    "fixed_threshold": 0.5,
+    "required_fields": [
+      "schema",
+      "dataset",
+      "seed",
+      "split_seed",
+      "variant",
+      "run_directory",
+      "checkpoint",
+      "checkpoint_role",
+      "checkpoint_epoch",
+      "checkpoint_sha256",
+      "validation_count",
+      "validation_split_sha256",
+      "fixed_threshold_0_5",
+      "best_points_under_fa_budget",
+      "points",
+      "threshold_selection_scope",
+      "cross_checkpoint_point_pooling",
+      "evaluated_checkpoint_count",
+      "official_test_accessed",
+      "run_identity",
+      "source_checkpoint_identity"
+    ],
+    "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_dlr_ramp100_public_sweep_interface_v1",
+    "threshold_selection_scope": "single_checkpoint_only",
+    "variants": [
+      "qfg_dlr",
+      "tss_qfg_dlr"
+    ]
+  },
+  "training_source_lock": {
+    "path": "/home/ly/SCTransNet_main/experiments/tpd_ner_v4_qfg_v2_croa_dlr_ramp100_exact_source_lock.json",
+    "sha256": "88b4839b40484c881544614e60675c4d2805a4fd6de1cc2f0aad28bdcb1395e8"
+  },
+  "write_once": true
+}

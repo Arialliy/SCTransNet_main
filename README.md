@@ -6,10 +6,64 @@ patch embedding 的目标保真下采样（Target-Preserving Downsampling, TPD�
 解码器、损失函数和输出接口保持不变，以便进行受控比较。
 
 > 当前结论来自 **NUDT-SIRST 官方训练集的内部验证划分**，未访问官方测试集。
-> TPD-Clean-v6 与 V7-DCH 正式实验使用两个随机种子；V8-MPRS-DCH + NER
-> V1/V2/V3 筛选只使用 seed 42。所有结果都不足以形成跨数据集稳定性结论。
+> TPD-Clean-v6 与 V7-DCH 正式实验使用两个随机种子；V8-MPRS-DCH、NER、
+> TSS 与 QFG-V2-CROA 筛选使用 seed 42。所有结果都不足以形成跨数据集稳定性结论。
 
-## 最新状态：NER V4 与 Target Survival
+## 最新状态：TSS + QFG-V2-CROA
+
+在 NER V4 Tail-Aware 上，本仓库完成了 TSS（训练期 Target Survival
+Supervision）与 QFG-V2-CROA（Query-only Frequency Gate）的 2×2 因子实验：
+
+| Arm | TSS | QFG | 训练变体 |
+|---|---|---|---|
+| A | off | off | `tss_control` |
+| B | on | off | `tss_on` |
+| C | off | on | `qfg_only` |
+| D | on | on | `tss_qfg` |
+
+QFG 只调制 NER query，不改 TPD tokenizer、SCTB、K/V、CFN 或 decoder 主路径；
+TSS 仍仅用于训练，导出推理权重中不含 survival heads。C/D 均从相应 TSS
+父 checkpoint warm start，完成 seed 42、NUDT-SIRST 530/133 内部划分、
+FP32、800-epoch 正式训练和 closed Pd–Fa sweeps。
+
+### QFG 正式训练结果（固定阈值 0.5）
+
+| 变体/Checkpoint | Epoch | Pd ↑ | Fa ↓ | mIoU ↑ | tiny-Pd | 错误目标 |
+|---|---:|---:|---:|---:|---:|---:|
+| QFG-only Pd-best | 29 | 188/189 | 4.0155e-6 | 0.930844 | 39/39 | **4** |
+| QFG-only mIoU-best | 3 | 188/189 | 4.8186e-6 | **0.939934** | 39/39 | 6 |
+| TSS+QFG Pd-best | 136 | 188/189 | **3.6713e-6** | 0.931693 | 39/39 | 6 |
+| TSS+QFG mIoU-best | 3 | 188/189 | 4.1302e-6 | 0.937018 | 39/39 | 5 |
+
+完整联合非支配分析将 QFG-only（C）判为 **`DOMINATED`**；TSS+QFG（D）
+拥有非孤立、独占的联合前沿区间，判为 **`PARETO_MIXED_TRADEOFF`**。
+最终工程选择为 **`SELECT_D_TSS_QFG`**。这表示 D 在当前单 seed 内部验证集上
+提供有价值的 Pareto 权衡，并不表示全面优于所有历史模型。
+
+### 推理默认工作点
+
+部署使用 D 的 `best_miou.pth.tar`（epoch 3）。旧版选择曾使用
+Fa budget `1e-4` 下的 threshold `0.0001589997`，虽然达到 Pd `189/189`，
+但带来 Fa `7.0328e-5` 和约 `2.46` 个错误目标/图。闭环 v2 因此将权威默认值
+修订为固定 threshold **`0.5`**：
+
+| Pd | tiny-Pd | Fa | mIoU | 错误目标/图 |
+|---:|---:|---:|---:|---:|
+| 188/189 | 39/39 | 4.1302e-6 | 0.937018 | 0.0376 |
+
+导出推理模型含 10,870,130 个参数、564 个 state keys，保留 QFG 权重且确认
+survival state 不存在。`paper_core_established=false`，
+`stability_claim_supported=false`；官方测试集未访问。
+
+主要实现与说明：
+
+- [`model/tpd_frequency_gate_v2_croa.py`](model/tpd_frequency_gate_v2_croa.py)
+- [`model/tpd_ner_v8_mprs_dch_v4_tail_aware_qfg_v2_croa_survival.py`](model/tpd_ner_v8_mprs_dch_v4_tail_aware_qfg_v2_croa_survival.py)
+- [`experiments/train_tpd_ner_v4_qfg_v2_croa_exact.py`](experiments/train_tpd_ner_v4_qfg_v2_croa_exact.py)
+- [`experiments/compare_tss_qfg_v2_croa_factorial.py`](experiments/compare_tss_qfg_v2_croa_factorial.py)
+- [`SCTransNet_TSS混合结果复盘与QFG_V2最终模型集成方案.md`](SCTransNet_TSS混合结果复盘与QFG_V2最终模型集成方案.md)
+
+## 已完成阶段：NER V4 与 Target Survival
 
 NER V4 Tail-Aware 保留 V8-MPRS-DCH tokenizer、五个 evidence nodes、
 `q4 → q3 → q2` 窄中继和原 SCTransNet decoder，只调整 stage-wise
@@ -55,9 +109,7 @@ V4 `best_miou` checkpoint warm start，并已完成 seed-42、800-epoch 正式�
 
 这些固定阈值结果没有显示 TSS-on 对 control 的统一优势：TSS-on 相比 control
 Pd-best 有更高 mIoU，但 Fa 和错误目标略高；control 的 mIoU-best 又取得更高
-mIoU。正式 Pd–Fa sweep、相对/Pareto 汇总和最终分级尚未发布，因此当前只报告
-训练完成和固定阈值事实，不提前写成 `RELATIVE_IMPROVED`、`PARETO_MIXED_TRADEOFF`
-或 `DOMINATED`。
+mIoU。后续完整因子分析将 TSS 与 QFG 的单独及联合贡献一并纳入最终选择。
 
 最新实现与方案：
 
@@ -354,6 +406,9 @@ model/tpd_ner_v8_mprs_dch_v4_tail_aware.py
                                      # NER V4 Tail-Aware
 model/tpd_ner_v8_mprs_dch_v4_tail_aware_survival.py
                                      # V4 + 训练期 Target Survival heads
+model/tpd_frequency_gate_v2_croa.py  # QFG-V2-CROA
+model/tpd_ner_v8_mprs_dch_v4_tail_aware_qfg_v2_croa_survival.py
+                                     # V4 + TSS + QFG 因子模型
 experiments/train_tpd_pilot.py       # 无官方测试泄漏的统一训练 runner
 experiments/train_tpd_clean_v6_exact.py
                                      # V6 精确续训正式入口
@@ -363,6 +418,10 @@ experiments/train_tpd_ner_v8_mprs_dch_v3_exact.py
                                      # V8 + NER V3 正式训练入口
 experiments/train_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_exact.py
                                      # V4 + TSS 精确续训入口
+experiments/train_tpd_ner_v4_qfg_v2_croa_exact.py
+                                     # QFG 正式训练入口
+experiments/compare_tss_qfg_v2_croa_factorial.py
+                                     # A/B/C/D 因子与 Pareto 汇总
 experiments/evaluate_pd_fa_sweep.py  # Pd–Fa threshold sweep
 experiments/summarize_tpd_pd_fa.py   # Pd–Fa 汇总
 experiments/decide_tpd_mainline_4x5090.py
@@ -400,11 +459,12 @@ tests/                                # 模块与决策策略测试
 ## 结果边界
 
 README 中的初代 TPD 结果为 seed-42 内部验证实验，TPD-Clean-v6 与 V7-DCH
-结果为 seed `42/3407` 内部验证实验，V8 + NER V1/V2/V3/V4 与 TSS 为
-seed-42 内部验证筛选。它们均不等同于 NUDT-SIRST 官方测试成绩，也不构成
-跨数据集稳定性结论。
+结果为 seed `42/3407` 内部验证实验，V8 + NER V1/V2/V3/V4、TSS 与
+QFG-V2-CROA 为 seed-42 内部验证筛选。它们均不等同于 NUDT-SIRST 官方测试
+成绩，也不构成跨数据集稳定性结论。
 V6、V7-DCH 均为 `ENGINEERING_GATE_FAIL`；V8 + NER V1/V2/V3 均为
 `RETURN_TO_MODEL_OPTIMIZATION`；V4 为
-`RELATIVE_MODEL_IMPROVEMENT_CONFIRMED_WITH_TRADEOFF`，TSS 的最终 Pd–Fa
-相对裁决仍待发布。不得将局部优点描述成稳定优越性。任何后续
+`RELATIVE_MODEL_IMPROVEMENT_CONFIRMED_WITH_TRADEOFF`；QFG-only 为
+`DOMINATED`，TSS+QFG 为 `PARETO_MIXED_TRADEOFF`，最终工程选择为
+`SELECT_D_TSS_QFG`。不得将局部优点描述成稳定优越性。任何后续
 论文级声明都应建立在完整审计、多种子、多数据集和独立官方测试结果之上。
