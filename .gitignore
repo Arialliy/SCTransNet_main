@@ -16,7 +16,11 @@ __pycache__/
 *.pth
 *.pth.tar
 *.orig
+*.lock
 events.out.tfevents.*
+
+# Local third-party reference paper
+/2401.15583v3.pdf
 
 # Local Codex handoff context
 /CODEX_WINDOW_CONTEXT_*.md

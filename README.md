@@ -9,7 +9,55 @@ patch embedding 的目标保真下采样（Target-Preserving Downsampling, TPD�
 > TPD-Clean-v6 与 V7-DCH 正式实验使用两个随机种子；V8-MPRS-DCH、NER、
 > TSS 与 QFG-V2-CROA 筛选使用 seed 42。所有结果都不足以形成跨数据集稳定性结论。
 
-## 最新状态：TSS + QFG-V2-CROA
+## 最新状态：固定 seed-42 最终模型工程认证闭环
+
+最终完整模型为 `SCTransNet + TPD V8-MPRS-DCH + 五节点 NER V4
+Tail-Aware + QFG-V2-CROA`，训练时使用 TSS，部署时严格移除 TSS heads。
+正式部署选择为 D / Full-stack（`tss_qfg`）的 `best_miou.pth.tar`，
+默认阈值为 `0.5`：
+
+| 指标 | 固定 seed-42 部署点 |
+|---|---:|
+| Epoch | 3 |
+| Pd | 188/189 = 0.994709 |
+| Fa | 4.1302e-6 |
+| mIoU | 0.937018 |
+| tiny-Pd | 39/39 |
+| 错误目标 | 5 |
+
+相对 Original 的 Pd-primary 固定点，最终 D 保持 Pd 与 tiny-Pd，将 Fa 约降低
+3.44 倍，mIoU 提升约 0.01764，错误目标从 17 降至 5。相对相邻的
+B / V4-stack+TSS，D 的 Pd、Fa、tiny-Pd 和错误目标相同，mIoU 仅提高约
+`0.000148`，因此不能将 QFG 描述为统一或显著优势。
+
+全新的固定 seed-42 B/D 认证 replay 均独立完成 800 epochs，并完成四个
+checkpoint-local Pd–Fa sweeps、配对 gate、部署 QFG 六模式审计、深度复核和
+write-once completion attestation。最终认证状态为：
+
+```text
+FIXED_SEED42_INTERNAL_CERTIFICATION_CLOSED
+SEED42_REPLAY_ENGINEERING_COMPLETE_MIOU_ROUTE_NOT_MET
+```
+
+这表示固定 seed-42 内部工程闭环已完成，但 mIoU 路线的论文级门槛未满足。
+认证未访问官方测试集，也未建立多 seed 稳定性：
+
+```text
+paper_core_established = false
+stability_claim_supported = false
+multiseed_replication_supported = false
+official_test_accessed = false
+```
+
+seed 3407 的 B 轨迹属于补充压力实验，不参与本轮固定 seed-42 主判定。
+当前不应声称论文级稳定性、统计显著性或跨数据集泛化。
+
+认证协议与闭环方案：
+
+- [`experiments/FINAL_MODEL_CERTIFICATION_PROTOCOL_V1.md`](experiments/FINAL_MODEL_CERTIFICATION_PROTOCOL_V1.md)
+- [`SCTransNet_最终模型稳定性认证与论文级闭环方案.md`](SCTransNet_最终模型稳定性认证与论文级闭环方案.md)
+
+## 已完成工程选择：TSS + QFG-V2-CROA
 
 在 NER V4 Tail-Aware 上，本仓库完成了 TSS（训练期 Target Survival
 Supervision）与 QFG-V2-CROA（Query-only Frequency Gate）的 2×2 因子实验：

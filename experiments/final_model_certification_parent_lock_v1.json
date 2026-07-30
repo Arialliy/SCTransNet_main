@@ -1,0 +1,271 @@
+{
+  "arm_training_semantics": {
+    "a_v4_stack_control": {
+      "common_v4_parent_used_for_initialization_only": true,
+      "qfg_enabled": false,
+      "tss_weight": 0.0,
+      "variant": "tss_control"
+    },
+    "b_v4_stack_tss": {
+      "common_v4_parent_used_for_initialization_only": true,
+      "qfg_enabled": false,
+      "tss_weight": 0.005,
+      "variant": "tss_on"
+    },
+    "c_v4_stack_qfg": {
+      "common_v4_parent_used_for_initialization_only": true,
+      "qfg_enabled": true,
+      "tss_weight": 0.0,
+      "variant": "qfg_only"
+    },
+    "d_full_stack": {
+      "common_v4_parent_used_for_initialization_only": true,
+      "qfg_enabled": true,
+      "tss_weight": 0.005,
+      "variant": "tss_qfg"
+    },
+    "original": {
+      "common_v4_parent_used": false,
+      "independent_complete_model_training": true,
+      "variant": "original"
+    },
+    "shared_rule": {
+      "all_child_parameters_trainable": true,
+      "cross_arm_resume_forbidden": true,
+      "one_independent_child_instance_per_arm": true,
+      "one_new_optimizer_per_child": true,
+      "parent_optimizer_scheduler_and_epoch_inherited": false
+    }
+  },
+  "candidate_family": "tpd_ner_v4_qfg_v2_croa",
+  "certification_state": {
+    "certification_design_complete": false,
+    "certification_design_reviewed": true,
+    "certification_execution_authorized": false,
+    "certification_implementation_complete": false
+  },
+  "claim_boundary": {
+    "cross_seed_stability_claim": false,
+    "final_model_engineering_selected": true,
+    "final_model_established": true,
+    "internal_validation_only": true,
+    "official_test_accessed": false,
+    "official_test_claim": false,
+    "paper_core_established": false,
+    "scope": "single_seed_internal_validation",
+    "stability_claim_supported": false
+  },
+  "data_contract": {
+    "dataset": "NUDT-SIRST",
+    "normalization": {
+      "mean": 107.28969064388635,
+      "std": 32.74261895755552
+    },
+    "official_test_accessed": false,
+    "scope": "official_training_set_internal_split",
+    "split_seed": 20260722,
+    "train_count": 530,
+    "train_ids_sha256": "9565f584a5429fd1e5f0451b2d9496877f6f887493dd4d9954b4e976989f245b",
+    "training_data_sha256": "39ce329032b7d6e70dcf16e7cd6a0624f52ecfe8c1b9d7c2a04e2bf0180b9b0e",
+    "training_seed": 42,
+    "validation_count": 133,
+    "validation_ids_sha256": "86247e5970f93224c64005e1ac7f3a933bafb37baf279ab71fce5670ae925e06"
+  },
+  "evaluator_contract": {
+    "fa_budgets": [
+      1e-06,
+      5e-06,
+      1e-05,
+      5e-05,
+      0.0001
+    ],
+    "fixed_threshold": 0.5,
+    "match_radius": 3.0,
+    "official_test_accessed": false,
+    "prediction_comparison": "prediction > threshold",
+    "primary_metrics": [
+      "pd",
+      "fa",
+      "miou",
+      "tiny_pd",
+      "false_objects"
+    ],
+    "source_sha256": {
+      "experiments/evaluate_pd_fa_sweep.py": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537",
+      "experiments/evaluate_tpd_clean_v6_pd_fa.py": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f",
+      "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_pd_fa.py": "687617a96aeec7861b99d760f520b801abd46e3c820a12cc967e326130cf450a",
+      "experiments/evaluate_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_pd_fa.py": "3d1559101f498a49d9a2afdb8bc49c8110ab36a03e33c5da9502a6d44086fa61"
+    },
+    "tiny_area": 9
+  },
+  "frozen_model_source": {
+    "commit": "a295f751470c3414bb453d702451cecde41a1524",
+    "commit_timestamp": 1785369456,
+    "parents": [
+      "5bc3ea5cbf4bcbc12c285d0d85fdfb74ab9cc7dc"
+    ],
+    "subject": "Add QFG V2 CROA experiment and deployment workflow",
+    "tree": "e12457685d6eb61252adc757df37e42c04a3cca6"
+  },
+  "frozen_model_source_commit": "a295f751470c3414bb453d702451cecde41a1524",
+  "frozen_model_source_paths": {
+    "dataset.py": {
+      "git_blob_oid": "0b74c4deba10adc1d9e4e22c34c2259aa90bc4fc",
+      "sha256": "516ea9c410f80cc9ae912cf0443126a067dd14b6cc5ad7945e83cfc497f4678d"
+    },
+    "experiments/evaluate_pd_fa_sweep.py": {
+      "git_blob_oid": "e18f41a3f8e39c92e3b486789daf29a63376a211",
+      "sha256": "0224ab44dc346ebdbd4cb4775c493bd6eecdc877019832dea0f16e59ab353537"
+    },
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py": {
+      "git_blob_oid": "4674b210fdb171f3ebcc3c57e618abbe2c4d973d",
+      "sha256": "bc1f8a25b0f047719002ed838442fe0e244d25292e2bd67f768f9b08d7251a5f"
+    },
+    "experiments/evaluate_tpd_ner_v4_qfg_v2_croa_pd_fa.py": {
+      "git_blob_oid": "3a2c4b16d33bdf3defbd105ee6fa4f9b38e3bb5e",
+      "sha256": "687617a96aeec7861b99d760f520b801abd46e3c820a12cc967e326130cf450a"
+    },
+    "experiments/evaluate_tpd_ner_v8_mprs_dch_v4_tail_aware_survival_pd_fa.py": {
+      "git_blob_oid": "21e5d398819e195edcaa7f228ef4ff025d6d4a87",
+      "sha256": "3d1559101f498a49d9a2afdb8bc49c8110ab36a03e33c5da9502a6d44086fa61"
+    },
+    "experiments/publish_tpd_ner_v4_qfg_v2_croa_default_operating_point_v2.py": {
+      "git_blob_oid": "0acbc9b28d7cd39d15a8be3c6ee82184cd2353b4",
+      "sha256": "96ba295cb6106a09a870337a7d01fde9d694d867ec14a89aa1692fe31f18fe4b"
+    },
+    "experiments/train_tpd_ner_v4_qfg_v2_croa_exact.py": {
+      "git_blob_oid": "f611e0103771af3e15cdead9039f50eeddf815b8",
+      "sha256": "fe1e01ca901584a9558287b332bedcf87157d194f4ea51a61559fed3ea8853de"
+    },
+    "model/tpd_ner_v8_mprs_dch_v4_tail_aware_qfg_v2_croa_survival.py": {
+      "git_blob_oid": "8c99566f69322347f5023236f691280856f152c7",
+      "sha256": "c8c7db1fc8b3e83c45ee11dcb45f7c09dd2f4456554c4267aaba3b369394ff53"
+    }
+  },
+  "lock_kind": "certification_parent",
+  "policy": {
+    "canonical_pretty_json": true,
+    "certification_commit_bound": false,
+    "certification_commit_deferred_to_release_attestation": true,
+    "certification_protocol_self_excluded": true,
+    "freezer_self_excluded": true,
+    "frozen_commit_blobs_match_live_sources": true,
+    "live_source_maps_verified": true,
+    "official_test_accessed": false,
+    "one_trailing_newline": true,
+    "overwrite_forbidden": true,
+    "parent_lock_self_excluded": true,
+    "regular_non_symlink_inputs": true,
+    "repo_relative_paths_only": true,
+    "write_once": true
+  },
+  "schema": "sctransnet_final_model_certification_parent_lock_v1",
+  "selected_model": {
+    "d_training_checkpoint": {
+      "checkpoint": "best_miou.pth.tar",
+      "epoch": 3,
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/tss_qfg/seed_42_formal800_tss_qfg/best_miou.pth.tar",
+      "role": "best_validation_miou_secondary",
+      "sha256": "890c8cf0e0f7c3a4c21e5772e69cd89e3038b308a1d77be58365f2254b89b678"
+    },
+    "final_inference_artifact": {
+      "parameter_count": 10870130,
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/deployment/tpd_ner_v4_qfg_v2_croa_formal800_inference.pth.tar",
+      "qfg_state_preserved": true,
+      "sha256": "997027bb2cc59e0e16ef85beba2c78ab8b3e195de962acbe7c97adc8c007c63a",
+      "state_key_count": 564,
+      "strict_load": true,
+      "survival_state_absent": true
+    },
+    "inference_uses_tss": false,
+    "initialization_parent": {
+      "child_trainable_scope": "all_model_parameters",
+      "children_independent_after_common_initialization": true,
+      "copied_shared_state_key_count": 544,
+      "epoch": 489,
+      "parent_model_trained_with_child": false,
+      "parent_optimizer_inherited": false,
+      "path": "experiments/results/tpd_ner_v8_mprs_dch_v4_tail_aware_exact_v1/NUDT-SIRST/tpd_ner_v8_mprs_dch_v4_tail_aware_full_relay_on/seed_42_formal800_exact_v4_tail_aware_seed42/best_miou.pth.tar",
+      "role": "best_validation_miou_secondary",
+      "sha256": "0ae6c0e034952e18333d8fa6ccd3bbf635cae5efa8017b06df5e00ccc4ed14ab",
+      "state_dict_sha256": "2b8249ffd86866597f376c80839395a3cbdbb72a68301cd8a5a6eb36595c7e75",
+      "usage": "initialization_only"
+    },
+    "method_id": "d_tss_qfg",
+    "operating_point": {
+      "authority": "deployment_v2_authoritative_default",
+      "metrics": {
+        "fa": 4.1301985432330825e-06,
+        "false_objects": 5,
+        "matched_target_count": 188,
+        "matched_tiny_target_count": 39,
+        "miou": 0.9370177924736262,
+        "pd": 0.9947089947089947,
+        "target_count": 189,
+        "tiny_pd": 1.0,
+        "tiny_target_count": 39
+      },
+      "source": "fixed_threshold_0_5",
+      "threshold": 0.5
+    },
+    "training_uses_tss": true,
+    "variant": "tss_qfg"
+  },
+  "status": "complete",
+  "upstream_authorities": {
+    "d_run_protocol": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/tss_qfg/seed_42_formal800_tss_qfg/protocol.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_exact_entry_v1",
+      "sha256": "83ee7e9d937b55dfa46344bfbe2fea44feef26629b669f85eca0bc49e8ce00ae"
+    },
+    "d_run_split": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/tss_qfg/seed_42_formal800_tss_qfg/split.json",
+      "sha256": "391bca28848038d6386a6c70cbaeb902ba71a8dc73a4a134441ac2aa5b438828"
+    },
+    "d_selected_checkpoint_sweep": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/tss_qfg/seed_42_formal800_tss_qfg/pd_fa_sweep_best_miou.pth.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_checkpoint_local_pd_fa_v1",
+      "sha256": "37cb99e061abc49e2836c81eab717efd6dcb840cc7ffde2fe3ded9e6a7b659f5"
+    },
+    "default_operating_point_v2": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/deployment_v2/tpd_ner_v4_qfg_v2_croa_formal800_default_operating_point_v2.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_default_operating_point_v2",
+      "sha256": "49bce98376004ff611723ab03aa608b8ba2192f85ba408c09d8bfb4580735a0b"
+    },
+    "deployment_manifest_v2": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/deployment_v2/tpd_ner_v4_qfg_v2_croa_formal800_deployment_manifest_v2.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_deployment_manifest_v2",
+      "sha256": "542f8df7fe11cf982835bccba4bf7ae12c2d3538de16fa14b012b99732bc0faf"
+    },
+    "final_selection_v2": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/final_selection/tpd_ner_v4_qfg_v2_croa_formal800_final_selection.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_final_selection_v2",
+      "sha256": "29d4b3e21c7308c97e2abc2ae28016ff71ece71d88b758b0e3ae2ce7c92988a8"
+    },
+    "operational_source_lock_v2": {
+      "path": "experiments/tpd_ner_v4_qfg_v2_croa_operational_closure_source_lock_v2.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_operational_closure_source_lock_v2",
+      "sha256": "ea23c5a13f0a85841e624ecb57863a6f36ef711ff5542de4aa945d09cb76b182"
+    },
+    "posttraining_source_lock": {
+      "path": "experiments/tpd_ner_v4_qfg_v2_croa_posttraining_closure_source_lock.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_posttraining_closure_source_lock_v1",
+      "sha256": "315f091b75078e65b871946cecae92893e8915bb3951b6fc4dcf3a52c984cbbd"
+    },
+    "reproducibility_manifest_v2": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/reproducibility_manifest_v2/manifest.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_formal800_reproducibility_manifest_v2",
+      "sha256": "410f87ec069bbd32ae71b80e2655608867665a15c91e5493d2d02e2badef9a38"
+    },
+    "seed42_factorial": {
+      "path": "experiments/results/tpd_ner_v4_qfg_v2_croa_exact_v2_optimized/NUDT-SIRST/comparison_factorial_v1/tss_qfg_v2_croa_factorial_seed42.json",
+      "schema": "sctransnet_tss_qfg_v2_croa_factorial_seed42_v2",
+      "sha256": "aa4f2867e6b9c49b66d63b2b9f5210c0ac89d1e19595b23ac3c0b347fc05344e"
+    },
+    "training_source_lock": {
+      "path": "experiments/tpd_ner_v4_qfg_v2_croa_exact_source_lock_v2_optimized.json",
+      "schema": "sctransnet_tpd_ner_v4_qfg_v2_croa_exact_source_lock_v1",
+      "sha256": "8d55464851db9441383854189eff64c05daf25e7ff3502c6c67cf06401996478"
+    }
+  }
+}
