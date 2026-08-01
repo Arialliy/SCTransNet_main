@@ -24,3 +24,5 @@ events.out.tfevents.*
 
 # Local Codex handoff context
 /CODEX_WINDOW_CONTEXT_*.md
+/results/
+/datasets/

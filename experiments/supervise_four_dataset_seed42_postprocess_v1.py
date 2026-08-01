@@ -836,7 +836,10 @@ def run_supervisor(
     workers: int,
     force_rerun: bool = False,
 ) -> dict[str, Any]:
-    if not PYTHON.is_file() or PYTHON.is_symlink():
+    # A virtual environment normally exposes ``bin/python`` as a symlink.
+    # Artifact inputs remain symlink-rejected elsewhere; the executable is
+    # valid as long as its resolved target is a regular file.
+    if not PYTHON.is_file():
         raise PostprocessError(f"required Python is missing: {PYTHON}")
     started = time.time()
     POSTPROCESS_ROOT.mkdir(parents=True, exist_ok=True)

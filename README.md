@@ -516,3 +516,17 @@ V6、V7-DCH 均为 `ENGINEERING_GATE_FAIL`；V8 + NER V1/V2/V3 均为
 `DOMINATED`，TSS+QFG 为 `PARETO_MIXED_TRADEOFF`，最终工程选择为
 `SELECT_D_TSS_QFG`。不得将局部优点描述成稳定优越性。任何后续
 论文级声明都应建立在完整审计、多种子、多数据集和独立官方测试结果之上。
+## 下一阶段：四数据集 1000-epoch 论文实验
+
+在固定 seed-42 工程认证闭环之后，仓库新增了面向论文级证据的分数据集实验方案：
+分别在 IRSTD-1K、NUDT-SIRST、NUAA-SIRST 和 SIRST3 上执行 1000-epoch 训练，
+保持统一评估协议、独立数据划分和完整 Pd–Fa 记录。该阶段的文档与入口已加入仓库，
+但本 README 不提前填入尚未封存的最终指标；本地 `datasets/` 和 `results/` 目录
+不会随 Git 推送。
+
+相关文件：
+
+- `SCTransNet_分数据集1000Epoch论文实验完整方案.md`
+- `SCTransNet_模型设计复盘与下一步向量结构优化方案.md`
+- `experiments/supervise_four_dataset_seed42_postprocess_v1.py`
+- `experiments/create_and_verify_nuaa_misc111_correction_v1.py`
