@@ -530,3 +530,25 @@ V6、V7-DCH 均为 `ENGINEERING_GATE_FAIL`；V8 + NER V1/V2/V3 均为
 - `SCTransNet_模型设计复盘与下一步向量结构优化方案.md`
 - `experiments/supervise_four_dataset_seed42_postprocess_v1.py`
 - `experiments/create_and_verify_nuaa_misc111_correction_v1.py`
+
+### 四数据集 seed-42 结果（已封存）
+
+四个数据集的 1000-epoch 训练与 Pd–Fa 汇总已完成。下表为按测试集 mIoU 选择的
+checkpoint；该选择是 test-selected/optimistic，仅用于论文实验记录，不能当作
+独立测试泛化结论。
+
+| 数据集 | 方法 | Epoch | mIoU | Pd | Fa | tiny-Pd |
+|---|---|---:|---:|---:|---:|---:|
+| SIRST3 | Original | 580 | 0.827791 | 0.967442 | 9.4869e-6 | 0.950617 |
+| SIRST3 | Final | 600 | **0.832626** | 0.967442 | 8.8641e-6 | 0.956790 |
+| NUAA-SIRST | Original | 830 | 0.786825 | **0.969582** | 2.6549e-5 | **0.914286** |
+| NUAA-SIRST | Final | 720 | **0.796547** | 0.961977 | **1.6670e-5** | 0.857143 |
+| NUDT-SIRST | Original | 520 | **0.945607** | 0.989418 | **2.5048e-6** | 0.996139 |
+| NUDT-SIRST | Final | 410 | 0.944498 | **0.990476** | 4.3892e-6 | 0.996139 |
+| IRSTD-1K | Original | 270 | **0.673543** | **0.949495** | 2.2110e-5 | 0.766667 |
+| IRSTD-1K | Final | 470 | 0.669581 | 0.936027 | **2.1977e-5** | 0.766667 |
+
+固定 epoch-1000 端点显示：Final 在 SIRST3、NUAA-SIRST 和 NUDT-SIRST 的部分指标
+改善，但 IRSTD-1K 端点退化；因此当前只能报告数据集相关的混合结果，不能声称
+Final 在四个数据集上统一优于 Original。汇总同时记录了 16 条 dataset-specific
+Pd–Fa sweep、`test_selected=true` 和 `stability_claim_supported=false`。

@@ -7,10 +7,15 @@ flattened into one deep-supervision tuple.
 
 The public entry point keeps the original segmentation objective unchanged:
 
-    L = sum_j BCE(segmentation_j, target)
-        + lambda_s * sum_i BCEWithLogits(survival_i, Y16)
+    L_seg = sum_j BCE(segmentation_j, target)
+    L_tss = sum_i BCEWithLogits(survival_i, Y16)
+    lambda_eff = min(lambda_s, rho * stopgrad(L_seg)
+                               / (stopgrad(L_tss) + eps))
+    L = L_seg + lambda_eff * L_tss
 
 where ``Y16`` is a fixed 16x max-pooled binary target.
+When ``rho`` is omitted, ``lambda_eff`` is exactly ``lambda_s`` and the
+historical objective is preserved bit-for-bit.
 """
 
 from __future__ import annotations
@@ -43,12 +48,16 @@ class TPDTrainingLoss:
     survival: torch.Tensor
     segmentation_terms: tuple[torch.Tensor, ...]
     survival_terms: tuple[torch.Tensor, ...]
+    effective_survival_weight: torch.Tensor
+    weighted_survival: torch.Tensor
 
     def __post_init__(self) -> None:
         for name, value in (
             ("total", self.total),
             ("segmentation", self.segmentation),
             ("survival", self.survival),
+            ("effective_survival_weight", self.effective_survival_weight),
+            ("weighted_survival", self.weighted_survival),
         ):
             if not isinstance(value, torch.Tensor) or value.ndim != 0:
                 raise TPDTrainingLossError(f"{name} must be a scalar Tensor")
@@ -153,6 +162,19 @@ def _validated_survival_weight(value: float) -> float:
     return result
 
 
+def _validated_survival_ratio_cap(value: float | None) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TPDTrainingLossError("survival_ratio_cap must be numeric or None")
+    result = float(value)
+    if not math.isfinite(result) or result <= 0:
+        raise TPDTrainingLossError(
+            "survival_ratio_cap must be finite and positive"
+        )
+    return result
+
+
 def _pos_weight_tensor(
     value: float | torch.Tensor,
     reference: torch.Tensor,
@@ -183,6 +205,7 @@ def compute_tpd_training_loss(
     *,
     survival_weight: float = 0.0,
     survival_pos_weight: float | torch.Tensor = 1.0,
+    survival_ratio_cap: float | None = None,
 ) -> TPDTrainingLoss:
     """Compute the separated segmentation and optional survival objectives.
 
@@ -194,6 +217,7 @@ def compute_tpd_training_loss(
         raise TPDTrainingLossError("segmentation_criterion must be an nn.Module")
     _validate_binary_map("segmentation_target", segmentation_target)
     weight = _validated_survival_weight(survival_weight)
+    ratio_cap = _validated_survival_ratio_cap(survival_ratio_cap)
     maps = _segmentation_maps(output)
 
     segmentation_terms: list[torch.Tensor] = []
@@ -220,6 +244,8 @@ def compute_tpd_training_loss(
             survival=zero,
             segmentation_terms=tuple(segmentation_terms),
             survival_terms=(),
+            effective_survival_weight=zero,
+            weighted_survival=zero,
         )
 
     if not isinstance(output, TPDForwardOutput):
@@ -263,7 +289,22 @@ def compute_tpd_training_loss(
                 )
             )
         survival_loss = sum(survival_terms)
-        total = segmentation_loss + weight * survival_loss
+        requested_weight = segmentation_loss.new_tensor(weight)
+        if ratio_cap is None:
+            effective_weight = requested_weight
+        else:
+            # Both losses are detached deliberately: the cap controls the
+            # relative gradient scale but must not introduce a derivative
+            # through the dynamically selected coefficient.
+            epsilon = torch.finfo(survival_loss.dtype).eps
+            capped_weight = (
+                ratio_cap
+                * segmentation_loss.detach()
+                / survival_loss.detach().clamp_min(epsilon)
+            )
+            effective_weight = torch.minimum(requested_weight, capped_weight)
+        weighted_survival = effective_weight * survival_loss
+        total = segmentation_loss + weighted_survival
 
     return TPDTrainingLoss(
         total=total,
@@ -271,6 +312,8 @@ def compute_tpd_training_loss(
         survival=survival_loss,
         segmentation_terms=tuple(segmentation_terms),
         survival_terms=tuple(survival_terms),
+        effective_survival_weight=effective_weight,
+        weighted_survival=weighted_survival,
     )
 
 

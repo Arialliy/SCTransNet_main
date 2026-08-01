@@ -124,8 +124,63 @@ class TPDTrainingLossTests(unittest.TestCase):
             losses.total,
             expected_segmentation + weight * expected_survival,
         )
+        torch.testing.assert_close(
+            losses.effective_survival_weight,
+            torch.tensor(weight),
+        )
+        torch.testing.assert_close(
+            losses.weighted_survival,
+            weight * expected_survival,
+        )
 
         losses.total.backward()
+        self.assertGreater(float(segmentation.grad.abs().sum()), 0.0)
+        self.assertGreater(float(logit1.grad.abs().sum()), 0.0)
+        self.assertGreater(float(logit2.grad.abs().sum()), 0.0)
+
+    def test_survival_ratio_cap_limits_auxiliary_contribution(self) -> None:
+        segmentation = torch.full_like(self.target, 0.9, requires_grad=True)
+        logit1 = torch.zeros(2, 1, 2, 3, requires_grad=True)
+        logit2 = torch.zeros(2, 1, 2, 3, requires_grad=True)
+        output = TPDForwardOutput(
+            segmentation=segmentation,
+            emb1_survival_logits=logit1,
+            emb2_survival_logits=logit2,
+        )
+        requested_weight = 0.5
+        ratio_cap = 0.1
+        losses = compute_tpd_training_loss(
+            output,
+            self.target,
+            self.criterion,
+            survival_weight=requested_weight,
+            survival_pos_weight=10.116,
+            survival_ratio_cap=ratio_cap,
+        )
+        expected_weight = torch.minimum(
+            losses.segmentation.new_tensor(requested_weight),
+            ratio_cap
+            * losses.segmentation.detach()
+            / losses.survival.detach().clamp_min(
+                torch.finfo(losses.survival.dtype).eps
+            ),
+        )
+        torch.testing.assert_close(losses.effective_survival_weight, expected_weight)
+        torch.testing.assert_close(
+            losses.weighted_survival,
+            expected_weight * losses.survival,
+        )
+        torch.testing.assert_close(
+            losses.total,
+            losses.segmentation + losses.weighted_survival,
+        )
+        self.assertLessEqual(
+            float(losses.weighted_survival.detach()),
+            ratio_cap * float(losses.segmentation.detach()) + 1e-6,
+        )
+
+        losses.total.backward()
+        self.assertIsNone(losses.effective_survival_weight.grad_fn)
         self.assertGreater(float(segmentation.grad.abs().sum()), 0.0)
         self.assertGreater(float(logit1.grad.abs().sum()), 0.0)
         self.assertGreater(float(logit2.grad.abs().sum()), 0.0)
@@ -203,6 +258,18 @@ class TPDTrainingLossTests(unittest.TestCase):
                 self.target,
                 nn.BCELoss(reduction="none"),
             )
+        for value in (0.0, -1.0, float("nan"), True):
+            with self.subTest(survival_ratio_cap=value):
+                with self.assertRaisesRegex(
+                    TPDTrainingLossError,
+                    "survival_ratio_cap",
+                ):
+                    compute_tpd_training_loss(
+                        prediction,
+                        self.target,
+                        self.criterion,
+                        survival_ratio_cap=value,
+                    )
 
     def test_rejects_invalid_pos_weight_and_non_finite_logits(self) -> None:
         prediction = torch.sigmoid(torch.randn_like(self.target))
