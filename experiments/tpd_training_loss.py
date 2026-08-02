@@ -10,7 +10,7 @@ The public entry point keeps the original segmentation objective unchanged:
     L_seg = sum_j BCE(segmentation_j, target)
     L_tss = sum_i BCEWithLogits(survival_i, Y16)
     lambda_eff = min(lambda_s, rho * stopgrad(L_seg)
-                               / (stopgrad(L_tss) + eps))
+                               / max(stopgrad(L_tss), eps))
     L = L_seg + lambda_eff * L_tss
 
 where ``Y16`` is a fixed 16x max-pooled binary target.

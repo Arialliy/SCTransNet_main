@@ -6,7 +6,7 @@ This is a deliberately small revision of
 inference graph are unchanged.  Only the training-time TSS coefficient is
 changed from a fixed 0.005 to
 
-    min(0.005, 0.10 * stopgrad(L_seg) / (stopgrad(L_tss) + eps)).
+    min(0.005, 0.10 * stopgrad(L_seg) / max(stopgrad(L_tss), eps)).
 
 The historical V1 entry point and all V1 results remain untouched.  V2 writes
 to its own result root and reuses the frozen V1 data manifests.
@@ -159,7 +159,7 @@ def _protocol_payload_v2(*args: Any, **kwargs: Any) -> dict[str, Any]:
             "tss_ratio_cap": TSS_RATIO_CAP,
             "tss_effective_weight_formula": (
                 "min(0.005, 0.10*stopgrad(L_seg)/"
-                "(stopgrad(L_tss)+float32_eps))"
+                "max(stopgrad(L_tss),float32_eps))"
             ),
             "model_graph_changed": False,
             "inference_graph_changed": False,

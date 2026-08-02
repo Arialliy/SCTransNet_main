@@ -55,6 +55,27 @@ seed 42、1000 epochs 的四数据集实验已完成：SIRST3、NUAA-SIRST、NUD
 - [`SCTransNet_V2_全数据集混合结果复盘与全局TSS配方定型方案.md`](SCTransNet_V2_全数据集混合结果复盘与全局TSS配方定型方案.md)
 - `results/four_dataset_seed42_v1/paper_results_summary.json`（本地封存，不随 Git 推送）
 
+## 最新状态：V2 三数据集协议已实现，正式训练前需修订数据口径
+
+V2 已将后续正式实验范围收敛为 NUAA-SIRST、NUDT-SIRST 和 IRSTD-1K，严格使用
+各数据集已有 `img_idx/train` 与 `img_idx/test`，seed 42、1000 epochs、每 10 epochs
+评估，checkpoint 角色仅为 `best_miou` 与 `best_pd`。SIRST3 仅保留历史结果，不再
+参与 V2 训练、配方选择或聚合。
+
+当前执行裁决为 **`REVISE_IMG_IDX_PROTOCOL_BEFORE_RUN`**，研究裁决为
+**`INCONCLUSIVE_MIXED_TRADEOFF`**：三数据集全局 TSS 配方尚未建立，V2 runner、
+evaluator、launcher 和 selector 已完成，但正式训练启动与代码实现是两个独立状态。
+由于 test split 同时用于周期性评估、checkpoint 选择和 λ 选择，所有后续结果必须
+明确标注为 `test_selected`，不能声称独立测试或多 seed 稳定性。
+
+相关实现：
+
+- [`SCTransNet_V2全数据集混合结果复盘与全局TSS配方定型方案.md`](SCTransNet_V2全数据集混合结果复盘与全局TSS配方定型方案.md)
+- `experiments/three_dataset_v2_protocol.py`
+- `experiments/train_three_dataset_seed42_global_tss_v2.py`
+- `experiments/evaluate_three_dataset_v2.py`
+- `experiments/select_three_dataset_global_tss_recipe_v2.py`
+
 ## 固定 seed-42 最终模型工程认证闭环
 
 最终完整模型为 `SCTransNet + TPD V8-MPRS-DCH + 五节点 NER V4

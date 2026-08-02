@@ -30,7 +30,7 @@
 8. 固定 threshold=0.5，不进行阈值定型。
 9. 固定 seed 42，不扩展多 seed。
 10. 模型结构和创新主线保持不变。
-11. 本文件只修改实验方案，不代表训练已经启动。
+11. 本次执行已同步实现 three-dataset v2 协议、runner、launcher、evaluator 和 selector；代码实现完成与正式训练启动是两个独立状态。
 
 当前状态：
 
@@ -69,8 +69,11 @@
 - 模型工程：/home/ly/SCTransNet_main
 - Original baseline：/home/ly/SCTransNet
 - TSS loss：experiments/tpd_training_loss.py
-- V2 runner：experiments/train_four_dataset_final_seed42_tss_cap_v2.py
-- 现有训练 runner：experiments/train_four_dataset_original_final_seed42_exact_v1.py
+- 三数据集 V2 runner：experiments/train_three_dataset_seed42_global_tss_v2.py
+- 三数据集 V2 launcher：experiments/three_dataset_seed42_launch_v2.py
+- 三数据集 V2 evaluator：experiments/evaluate_three_dataset_v2.py
+- 全局 λ selector：experiments/select_three_dataset_global_tss_recipe_v2.py
+- 旧训练循环（仅复用 optimization/checkpoint loop）：experiments/train_four_dataset_original_final_seed42_exact_v1.py
 - 结果汇总：results/four_dataset_seed42_tss_cap_v2/V2_RESULTS_SUMMARY_STOPPED_20260802.md
 
 不使用外部仓库链接替代本地源码与本地产物。
@@ -239,9 +242,9 @@ V2 有效权重与当前代码一致：
 
 原文使用 Ltss + epsilon 的写法与实现不完全一致，现已改为 max(Ltss, epsilon)。
 
-## 2.4 当前日志能证明什么
+## 2.4 历史日志与新 runner 诊断范围
 
-现有 V2 runner 每个 epoch 只记录：
+已停止的 four-dataset V2 历史日志每个 epoch 只记录：
 
 - requested TSS weight；
 - ratio cap；
@@ -250,14 +253,14 @@ V2 有效权重与当前代码一致：
 - weighted TSS loss 与 segmentation loss 的聚合比值；
 - cap-active 的样本加权比例。
 
-现有日志没有保存：
+这些历史日志没有保存：
 
 - 每个 batch 的原始比值；
 - effective weight 的 p10、p50、p90、std、max；
 - 每个 batch 的 Lseg 与 Ltss 配对值；
 - 三个候选 λ 的逐 batch 反事实有效权重。
 
-因此不能从旧日志精确补算 0.0025、0.005、0.01 的 batch 级反事实覆盖率。该诊断只能从新训练开始记录，不能把估算值写成真实结果。
+因此不能从旧日志精确补算 0.0025、0.005、0.01 的 batch 级反事实覆盖率，不能把估算值写成真实结果。新 `train_three_dataset_seed42_global_tss_v2.py` 已实现逐 batch 的 Lseg/Ltss、原始/有效比值、effective weight p10/p50/p90/std/max、cap-active 和三候选反事实有效权重；这些字段只从新 12-run 产物中读取。
 
 ---
 
@@ -406,7 +409,7 @@ best_miou 与 best_pd 分别表示区域质量优先端点和目标检出优先�
 
     (Pd, -Fa, tiny-Pd, mIoU, nIoU, -test_loss, -epoch)
 
-## 4.4 公平比较规则
+## 4.4 单 run 协议一致性与搜索预算差异
 
 - Original 选择自己的 best_miou 与 best_pd。
 - 每个 Final λ 选择自己的 best_miou 与 best_pd。
@@ -416,6 +419,23 @@ best_miou 与 best_pd 分别表示区域质量优先端点和目标检出优先�
 - 一行结果必须来自同一 checkpoint、同一阈值、同一 test 列表。
 - best_miou 与 best_pd 可以偶然选择同一 epoch；仍保留两个角色记录。
 - 每个 checkpoint 保存 epoch、选择 key、test 指标、权重摘要和源码版本。
+
+准确的比较表述是：
+
+- 单个 Original 与单个 Final run 使用相同数据、seed、epochs、optimizer、scheduler、增强、评估频率和阈值，属于单 run 协议一致；
+- Original 只有 3 个训练 run；
+- Final 因搜索三个正 λ，共有 9 个训练 run；
+- Final 的训练搜索预算是 Original 的 3 倍，且 TSS 还会增加少量训练期计算；
+- 因此不能写“Original 与 Final 的总搜索预算完全公平”；
+- 必须同时报告单 run GPU-hours、Original 总 GPU-hours、Final 搜索总 GPU-hours和峰值显存。
+
+固定披露：
+
+    per_run_protocol_matched=true
+    original_training_runs=3
+    final_training_runs=9
+    final_to_original_run_budget_ratio=3.0
+    total_search_budget_equal=false
 
 ## 4.5 评估日程和保存范围
 
@@ -505,7 +525,7 @@ NUAA test 列表第 91 个样本为 Misc_111。
     corrected_mask_sha256
       = 7e20ff7267737f367d2ea0545289152710225fe871d7c34c34b2d97c66b06fff
 
-后续三数据集 runner 不再依赖 SIRST3 路径。实现阶段应把已验证修正 mask 的相同字节放入版本化 NUAA overlay，例如：
+三数据集 runner 不再依赖 SIRST3 路径。已验证修正 mask 的相同字节已放入 NUAA 内部 overlay：
 
     datasets/NUAA-SIRST/masks_corrected/Misc_111.png
 
@@ -519,12 +539,12 @@ NUAA test 列表第 91 个样本为 Misc_111。
 - overlay 路径和三项摘要写入 protocol.json；
 - 其他 NUAA 样本仍读取原 masks 目录。
 
-当前 four_dataset correction manifest 和旧 data protocol 仍指向 SIRST3/masks/Misc_111.png。正式运行前必须：
+历史 four_dataset correction manifest 仍保留旧记录，但不再是正式输入。以下四项已落地：
 
-1. 创建上述 NUAA 内部同字节 overlay；
-2. 生成只包含三数据集的新 correction manifest；
-3. 让新 loader 只解析 NUAA overlay；
-4. 验证正式运行身份中不存在 SIRST3 路径。
+1. 已创建上述 NUAA 内部同字节 overlay；
+2. 已生成只包含三数据集的 v2 protocol manifest；
+3. 新 loader 已只解析 NUAA overlay；
+4. 正式数据绑定已结构化限定为 NUAA、NUDT 和 IRSTD-1K。
 
 该修正只处理 NUAA 的一个既有 test 样本，不代表使用 SIRST3 数据集进行实验。
 
@@ -615,7 +635,11 @@ Original 是性能基准，不属于 λ 候选。
     R_macro(λ)
       = 三个 R_dataset 的算术平均
 
-这只是配方排名，不产生第三种 checkpoint。
+名次永远在全部三个预注册候选 `{0.0025,0.005,0.01}` 上先一次性计算；严重退化门和 Original 覆盖门只改变后续的 eligibility/Pareto 集合，不剔除失败候选后重算剩余候选的名次。固定字段：
+
+    rank_population=all_three_preregistered_candidates_before_eligibility_gates
+
+每个候选还保留三数据集、双角色、五指标的完整方向统一 rank 向量，共 30 个单元。任何全局选择都只使用这些等权 rank 和后续 Pareto 关系，不对 mIoU、nIoU、Pd、Fa、tiny-Pd 的原始数值直接求和。
 
 ## 6.5 相对 Original 的严重退化保护
 
@@ -623,9 +647,9 @@ Original 是性能基准，不属于 λ 候选。
 
 1. matched target 不得比 Original 少 2 个或更多；
 2. tiny matched target 不得比 Original 少 2 个或更多；
-3. mIoU 不得比 Original 低 0.005 或更多；
-4. nIoU 不得比 Original 低 0.005 或更多；
-5. Fa 高于 Original 25% 以上时，matched target 必须至少多 2 个；
+3. mIoU 量化后必须满足 `q_original-q_final<50`；`>=50` 即触发退化门；
+4. nIoU 量化后必须满足 `q_original-q_final<50`；`>=50` 即触发退化门；
+5. Fa 使用同一数据集的 unmatched predicted pixels 整数比较；仅当 `final_pixels*4 > original_pixels*5` 时触发，正好 125% 不触发；触发时 matched target 必须至少多 2 个；
 6. Original Fa 为 0 而 Final Fa 大于 0 时，同样按第 5 条处理。
 
 任一项不满足，该 λ 不进入全局可选集合，不能由其他指标的微小改善抵消。
@@ -654,12 +678,9 @@ Original 是性能基准，不属于 λ 候选。
     S_dataset(d, λ)
       = S_role(d, best_miou, λ) + S_role(d, best_pd, λ)
 
-λ 进入可选集合还必须满足：
+上述 vote 只在 Pareto 过滤后作为第三顺位的并列裁决，不额外设置“单数据集 vote 必须非负”或“多数数据集 vote 必须为正”的准入门。这样全局准入仍由预注册的严重退化门、Original 双角色严格覆盖门与 30 维等权 rank Pareto 共同决定，而 vote 不能越过 rank/Pareto 改变准入集合。
 
-1. 三个 S_dataset 均不小于 0；
-2. 至少两个 S_dataset 大于 0；
-3. 三个 S_dataset 总和大于 0；
-4. 任一数据集不能在两个 checkpoint 角色上都被 Original 严格覆盖。
+唯一的 Original 准入条件是：任一数据集不能在两个 checkpoint 角色上都被 Original 严格覆盖。
 
 严格覆盖定义：
 
@@ -672,9 +693,27 @@ Original 是性能基准，不属于 λ 候选。
 
 不能为了继续流程而强行指定 λ。
 
-## 6.7 唯一 λ 选择顺序
+## 6.7 等权 rank Pareto 过滤
 
-在通过全部条件的候选中：
+严重退化保护与 Original 准入条件通过后，对候选的 30 维方向统一 rank 向量执行 Pareto 过滤。
+
+候选 A 覆盖候选 B，当且仅当：
+
+- A 在 30 个 rank 单元上均不差于 B；
+- 至少一个 rank 单元严格优于 B。
+
+被覆盖候选不能成为全局 λ。输出必须记录：
+
+    pareto_eligible
+    pareto_dominated
+    pareto_dominated_by
+    rank_vector
+
+Pareto 只使用等权 rank，不使用原始指标和，也不按图像数、目标数或数据集规模加权。
+
+## 6.8 唯一 λ 选择顺序
+
+在通过全部条件且位于 Pareto 集合的候选中：
 
     1. 最小 R_worst
     2. 最小 R_macro
@@ -686,6 +725,8 @@ Original 是性能基准，不属于 λ 候选。
     global_tss_lambda
     candidate_ranking
     per_dataset_rank
+    rank_vector
+    pareto_dominated_by
     per_dataset_role_vote
     per_dataset_total_vote
     selection_split=img_idx/test
@@ -704,6 +745,8 @@ Original 是性能基准，不属于 λ 候选。
     threshold=0.5
 
 不单独保留 calibration 数据，不选择部署阈值，不通过改阈值补偿模型性能。
+
+threshold=1.0 仅允许出现在描述性 Pd-Fa sweep 中，禁止参与 best_miou、best_pd、全局 λ 或主结果选择。
 
 ## 7.2 主结果必须同时报告
 
@@ -816,15 +859,17 @@ TSS 实际计算已经使用 clamp_min(epsilon)，不改核心 loss。
 
 ## 9.2 新 experiments 入口
 
-建议新增：
+实际实现：
 
-    experiments/validate_three_dataset_img_idx_seed42_v1.py
-    experiments/prepare_nuaa_misc111_overlay_v1.py
-    experiments/train_three_dataset_original_seed42_v1.py
-    experiments/train_three_dataset_tss_recipe_seed42_v1.py
-    experiments/select_three_dataset_global_tss_recipe_v1.py
-    experiments/build_three_dataset_test_cache_v1.py
-    experiments/finalize_three_dataset_seed42_results_v1.py
+    experiments/three_dataset_v2_protocol.py
+    experiments/prepare_nuaa_misc111_overlay_v2.py
+    experiments/paper_three_dataset_v2.py
+    experiments/train_three_dataset_seed42_global_tss_v2.py
+    experiments/three_dataset_seed42_launch_v2.py
+    experiments/evaluate_three_dataset_v2.py
+    experiments/select_three_dataset_global_tss_recipe_v2.py
+
+旧 four-dataset runner 只复用通用的 optimization/checkpoint loop，不再提供本轮数据集矩阵、数据 manifest、运行目录或全局 λ 身份。
 
 明确不新增：
 
@@ -832,7 +877,7 @@ TSS 实际计算已经使用 clamp_min(epsilon)，不改核心 loss。
     select_model_val_best_joint
     launch_sirst3_positive_tss_search
 
-现有 V2 runner 将 requested weight 固定为 0.005，不能原样承担三候选训练。新 Final runner 必须：
+历史 V2 runner 将 requested weight 固定为 0.005，不能原样承担三候选训练。新 Final runner 已实现：
 
 - 只接受 0.0025、0.005、0.01 三个候选值；
 - 把候选值写入运行身份、protocol、checkpoint 和 resume；
@@ -941,6 +986,9 @@ resume 必须保存或确定性重建：
 - Fa 只按 unmatched predicted pixels 投票；
 - 排名与 vote 使用相同的 0.0001 量化函数；
 - 严重退化保护先于 vote；
+- Pareto 只读取 30 维等权 rank 向量；
+- selector 不直接求原始指标和；
+- 输出每个被覆盖候选及其覆盖者；
 - 没有候选通过时不强选；
 - tie 最终选择更小 λ；
 - 输入来源只能是三个 img_idx/test。
@@ -998,8 +1046,10 @@ resume 必须保存或确定性重建：
 3. 实现三个固定正 λ；
 4. 增加 TSS 诊断；
 5. 实现三数据集等权 λ selector；
-6. 实现缓存和汇总；
-7. 完成全部测试。
+6. 实现独立 three-dataset v2 evaluator；
+7. 实现 threshold=0.5 主评估和带空预测标志的 Pd-Fa sweep；
+8. 实现缓存和汇总；
+9. 完成全部测试。
 
 完成条件：
 
@@ -1167,6 +1217,9 @@ resume 必须保存或确定性重建：
     planned_original_runs=3
     planned_final_runs=9
     planned_total_runs=12
+    per_run_protocol_matched=true
+    final_to_original_run_budget_ratio=3.0
+    total_search_budget_equal=false
 
     current_v2_decision=INCONCLUSIVE_MIXED_TRADEOFF
     v2_global_recipe_established=false
