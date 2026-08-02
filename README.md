@@ -26,6 +26,35 @@ README 只记录已封存或明确标注为计划中的证据，不把尚未完�
 
 - [`SCTransNet_V2结果复盘与下一步论文实验执行方案.md`](SCTransNet_V2结果复盘与下一步论文实验执行方案.md)
 
+## 最新结果：四数据集 V2 结果已封存
+
+seed 42、1000 epochs 的四数据集实验已完成：SIRST3、NUAA-SIRST、NUDT-SIRST
+和 IRSTD-1K 均包含 Original/Final 的固定阈值、best-mIoU、best-Pd、1000-epoch
+终点和 Pd–Fa sweep 记录。
+
+### best-mIoU 结果摘要
+
+| 数据集 | Final mIoU | Final Pd | Final Fa | Final tiny-Pd | Final 错误目标/图 |
+|---|---:|---:|---:|---:|---:|
+| SIRST3 | 0.832626 | 0.967442 | 8.8641e-6 | 0.956790 | 0.080630 |
+| NUAA-SIRST | **0.796547** | 0.961977 | **1.6670e-5** | 0.857143 | **0.102804** |
+| NUDT-SIRST | 0.944498 | **0.990476** | 4.3892e-6 | 0.996139 | 0.042169 |
+| IRSTD-1K | 0.669581 | 0.936027 | 2.1977e-5 | 0.766667 | **0.323383** |
+
+在 best-Pd 选择下，Final 在 NUDT-SIRST 和 NUAA-SIRST 的 Fa/区域质量有收益，
+但 SIRST3、NUDT-SIRST 的 Pd 与部分 mIoU 指标存在权衡；IRSTD-1K 主要改善错误
+目标数而非所有指标。Fa budget 下的 Pd 结论必须结合完整曲线阅读。
+
+> 重要评估边界：上述 checkpoint 是在各数据集官方测试 split 上选择的
+>（`test_selected=true`，`selection_is_optimistic=true`），因此不等同于独立测试
+> 或多 seed 稳定性证据。当前仍保持 `paper_core_established=false`、
+> `stability_claim_supported=false`。
+
+方案与汇总文件：
+
+- [`SCTransNet_V2_全数据集混合结果复盘与全局TSS配方定型方案.md`](SCTransNet_V2_全数据集混合结果复盘与全局TSS配方定型方案.md)
+- `results/four_dataset_seed42_v1/paper_results_summary.json`（本地封存，不随 Git 推送）
+
 ## 固定 seed-42 最终模型工程认证闭环
 
 最终完整模型为 `SCTransNet + TPD V8-MPRS-DCH + 五节点 NER V4
