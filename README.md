@@ -9,7 +9,24 @@ patch embedding 的目标保真下采样（Target-Preserving Downsampling, TPD�
 > TPD-Clean-v6 与 V7-DCH 正式实验使用两个随机种子；V8-MPRS-DCH、NER、
 > TSS 与 QFG-V2-CROA 筛选使用 seed 42。所有结果都不足以形成跨数据集稳定性结论。
 
-## 最新状态：固定 seed-42 最终模型工程认证闭环
+## 最新状态：V2 结果复盘与论文实验阶段
+
+当前仓库在固定 seed-42 最终模型工程认证之后，进入 V2 论文实验执行阶段。
+README 只记录已封存或明确标注为计划中的证据，不把尚未完成的多数据集结果写成
+最终结论。
+
+- 最终模型仍为 `SCTransNet + TPD V8-MPRS-DCH + NER V4 Tail-Aware + QFG-V2-CROA`，
+  训练期使用 TSS，推理时移除 TSS heads。
+- 四数据集实验协议覆盖 IRSTD-1K、NUDT-SIRST、NUAA-SIRST 和 SIRST3，统一执行
+  1000 epochs、独立划分与 Pd–Fa 评估。
+- V2 结果复盘、论文实验执行方案和 `paper/` 论文源文件已加入仓库；最终论文级
+  指标以封存结果为准，当前不宣称跨数据集稳定性或官方测试集性能。
+
+相关入口：
+
+- [`SCTransNet_V2结果复盘与下一步论文实验执行方案.md`](SCTransNet_V2结果复盘与下一步论文实验执行方案.md)
+
+## 固定 seed-42 最终模型工程认证闭环
 
 最终完整模型为 `SCTransNet + TPD V8-MPRS-DCH + 五节点 NER V4
 Tail-Aware + QFG-V2-CROA`，训练时使用 TSS，部署时严格移除 TSS heads。

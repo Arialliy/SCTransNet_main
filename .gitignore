@@ -26,3 +26,4 @@ events.out.tfevents.*
 /CODEX_WINDOW_CONTEXT_*.md
 /results/
 /datasets/
+/paper/
