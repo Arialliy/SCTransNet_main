@@ -97,6 +97,36 @@ def _payload() -> dict[str, object]:
     }
 
 
+def _launch_plan() -> dict[str, object]:
+    sources = selector.selector_source_sha256()
+    return {
+        "schema": selector.LAUNCH_PLAN_SCHEMA,
+        "status": "prepared_not_started",
+        "dataset_order": list(selector.DATASETS),
+        "worker_count": 12,
+        "original_run_count": 3,
+        "final_run_count": 9,
+        "total_search_budget_equal": False,
+        "final_to_original_run_budget_ratio": 3.0,
+        "static_inputs": {
+            "training_sources": {
+                "global_recipe_selector": {
+                    "path": str(selector.SELECTOR_SOURCE_PATH),
+                    "sha256": sources[
+                        "experiments/select_three_dataset_global_tss_recipe_v2.py"
+                    ],
+                },
+                "data_protocol": {
+                    "path": str(selector.DATA_PROTOCOL_SOURCE_PATH),
+                    "sha256": sources[
+                        "experiments/three_dataset_v2_protocol.py"
+                    ],
+                },
+            }
+        },
+    }
+
+
 class QuantizationTests(unittest.TestCase):
     def test_decimal_half_step_rounds_up_deterministically(self) -> None:
         self.assertEqual(selector.quantize_iou(0.50004), 5000)
@@ -162,6 +192,19 @@ class SelectorProtocolTests(unittest.TestCase):
         self.assertEqual(disclosure["final_search_run_count"], 9)
         self.assertEqual(disclosure["total_run_count"], 12)
         self.assertIn("equal total", disclosure["prohibited_claim"])
+
+    def test_result_hashes_selector_and_data_protocol_sources(self) -> None:
+        result = selector.select_global_recipe(_payload())
+        self.assertEqual(result["source_sha256"], selector.selector_source_sha256())
+        self.assertEqual(
+            set(result["source_sha256"]),
+            {
+                "experiments/select_three_dataset_global_tss_recipe_v2.py",
+                "experiments/three_dataset_v2_protocol.py",
+            },
+        )
+        self.assertFalse(result["launch_plan_binding"]["provided"])
+        self.assertFalse(result["launch_plan_binding"]["validated"])
 
     def test_test_index_identities_are_bound_to_frozen_protocol(self) -> None:
         payload = _payload()
@@ -344,11 +387,60 @@ class SelectorProtocolTests(unittest.TestCase):
             written = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(written["schema"], selector.OUTPUT_SCHEMA)
             self.assertEqual(len(written["input_sha256"]), 64)
+            self.assertFalse(written["launch_plan_binding"]["provided"])
             with self.assertRaises(FileExistsError):
                 with redirect_stdout(io.StringIO()):
                     selector.main(
                         ["--input", str(source), "--output", str(output)]
                     )
+
+    def test_cli_strictly_binds_prepared_launch_plan_source_hashes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "input.json"
+            plan_path = root / "launch_plan.json"
+            output = root / "selection.json"
+            source.write_text(json.dumps(_payload()), encoding="utf-8")
+            plan_path.write_text(json.dumps(_launch_plan()), encoding="utf-8")
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(
+                    selector.main(
+                        [
+                            "--input",
+                            str(source),
+                            "--output",
+                            str(output),
+                            "--launch-plan",
+                            str(plan_path),
+                        ]
+                    ),
+                    0,
+                )
+            result = json.loads(output.read_text(encoding="utf-8"))
+            binding = result["launch_plan_binding"]
+            self.assertTrue(binding["provided"])
+            self.assertTrue(binding["validated"])
+            self.assertTrue(binding["matches_current_source_sha256"])
+            self.assertEqual(
+                binding["frozen_selector_sha256"],
+                result["source_sha256"][
+                    "experiments/select_three_dataset_global_tss_recipe_v2.py"
+                ],
+            )
+            self.assertEqual(
+                binding["launch_plan_sha256"],
+                selector._file_sha256(plan_path),
+            )
+
+            tampered = _launch_plan()
+            tampered["static_inputs"]["training_sources"][
+                "global_recipe_selector"
+            ]["sha256"] = "0" * 64
+            plan_path.write_text(json.dumps(tampered), encoding="utf-8")
+            with self.assertRaisesRegex(
+                selector.SelectorInputError, "differs from current source"
+            ):
+                selector.validate_launch_plan_binding(plan_path)
 
 
 if __name__ == "__main__":

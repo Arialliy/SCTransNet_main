@@ -22,6 +22,12 @@ README 只记录已封存或明确标注为计划中的证据，不把尚未完�
 - V2 结果复盘、论文实验执行方案和 `paper/` 论文源文件已加入仓库；最终论文级
   指标以封存结果为准，当前不宣称跨数据集稳定性或官方测试集性能。
 
+当前 V2 执行裁决为 `REVISE_IMG_IDX_PROTOCOL_BEFORE_RUN`，研究裁决为
+`INCONCLUSIVE_MIXED_TRADEOFF`；统一 TSS 配方尚未建立，正式训练尚未授权。
+近期 smoke 仅用于验证 runner 和协议链路，不构成正式性能结果。V2 的 evaluator、
+selector、launcher 及 launch plan 已绑定模型树、运行时和评估协议的 SHA-256；源码
+不一致时会拒绝复用结果。
+
 相关入口：
 
 - [`SCTransNet_V2结果复盘与下一步论文实验执行方案.md`](SCTransNet_V2结果复盘与下一步论文实验执行方案.md)

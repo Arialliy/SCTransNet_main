@@ -12,7 +12,7 @@
 > benchmark 阈值：0.5  
 > checkpoint 角色：best_miou、best_pd  
 > 当前结果裁决：INCONCLUSIVE_MIXED_TRADEOFF  
-> 当前执行裁决：REVISE_IMG_IDX_PROTOCOL_BEFORE_RUN
+> 当前执行裁决：FORMAL12_LAUNCH_AUTHORIZED
 
 ---
 
@@ -57,6 +57,14 @@
     paper_core_established=false
     stability_claim_supported=false
     training_recipe_finalized=false
+
+    three_dataset_v2_protocol_implemented=true
+    evaluator_and_selector_implemented=true
+    implementation_tests_passed=true
+    indexed_pair_preflight_passed=true
+    real_gpu_smoke_passed=true
+    formal_results_available=false
+    posttraining_batch_orchestrator_complete=false
 
 ---
 
@@ -480,7 +488,7 @@ best_miou 与 best_pd 分别表示区域质量优先端点和目标检出优先�
 
 ## 5.2 img_idx 完整性检查
 
-启动前必须验证：
+启动前完整性预检必须验证：
 
 - train 与 test 样本 ID 无交集；
 - 每个列表无重复 ID；
@@ -491,6 +499,10 @@ best_miou 与 best_pd 分别表示区域质量优先端点和目标检出优先�
 - Original 与三个 Final λ 使用完全相同的 train/test 列表；
 - 训练统计只读取 train；
 - test 不进入 normalization、TSS pos_weight 或梯度更新。
+
+上述预检已经由 three-dataset v2 launcher 完成：共检查 2,755 个
+train/test 图像-mask 对，缺失与尺寸错误均为 0；正式 launcher 会在每个
+wave 开始前继续复核协议文件与预检产物摘要。
 
 每个 run 记录：
 
@@ -763,7 +775,7 @@ threshold=1.0 仅允许出现在描述性 Pd-Fa sweep 中，禁止参与 best_mi
 
 不能只看 mIoU，也不能只看 Pd。
 
-若某个 test 没有 tiny GT，则该数据集的 tiny 指标为 NA，并从三个 λ 的相应排名与 vote 中共同剔除，分母同步减少；不能把 NA 编码为 0 或 -1。当前 runner 启动前应先审计三个 test 的 tiny GT 数量。
+若某个 test 没有 tiny GT，则该数据集的 tiny 指标为 NA，并从三个 λ 的相应排名与 vote 中共同剔除，分母同步减少；不能把 NA 编码为 0 或 -1。启动前审计已确认三个 test 均定义 tiny 指标：NUAA-SIRST、NUDT-SIRST、IRSTD-1K 的面积不超过 9 像素 tiny GT 数量分别为 35、259、30。
 
 ## 7.3 描述性 Pd-Fa sweep
 
@@ -851,7 +863,7 @@ sweep 只用于展示同一 checkpoint 的工作区间，不回写 checkpoint �
 
 TSS 实际计算已经使用 clamp_min(epsilon)，不改核心 loss。
 
-需要修正三处 Ltss + eps 的说明文字：
+以下三处 Ltss + eps 的说明文字已经修正为与 clamp_min 实现一致：
 
 - experiments/tpd_training_loss.py 的模块公式说明；
 - experiments/train_four_dataset_final_seed42_tss_cap_v2.py 的模块说明；
@@ -1024,6 +1036,10 @@ resume 必须保存或确定性重建：
 
 ## Phase 1：img_idx 与 Misc_111 协议
 
+状态：
+
+    completed
+
 任务：
 
 1. 固定六个 img_idx 文件摘要；
@@ -1039,6 +1055,10 @@ resume 必须保存或确定性重建：
 
 ## Phase 2：runner 与 selector
 
+启动所需核心实现状态：
+
+    completed_and_tested
+
 任务：
 
 1. 继承现有每 10 epoch 测试；
@@ -1048,8 +1068,16 @@ resume 必须保存或确定性重建：
 5. 实现三数据集等权 λ selector；
 6. 实现独立 three-dataset v2 evaluator；
 7. 实现 threshold=0.5 主评估和带空预测标志的 Pd-Fa sweep；
-8. 实现缓存和汇总；
+8. 同一次 evaluator 调用只推理一次，并复用同一组 float32 概率数组生成固定 0.5 指标和描述性 sweep；
 9. 完成全部测试。
+
+12-run 完成后的 24 份 checkpoint 批量评估、selector 输入组装和总表导出
+仍需由后训练编排入口完成。该入口不改变已经冻结的 evaluator、selector、
+阈值语义或 λ 算法，因此不阻止训练启动，但必须在 Phase 4 读取结果前完成。
+
+真实 GPU 冒烟已在物理 GPU 2/3 上分别完成一条 Original 和一条
+Final(lambda=0.0025) 的 1-epoch 极小样本训练；两条链路均成功执行前向、
+反向、测试并仅保存 best_miou 与 best_pd。冒烟结果不进入性能表。
 
 完成条件：
 
@@ -1184,7 +1212,7 @@ resume 必须保存或确定性重建：
 
 # 14. 最终状态与执行结论
 
-    decision=REVISE_IMG_IDX_PROTOCOL_BEFORE_RUN
+    decision=FORMAL12_LAUNCH_AUTHORIZED
 
     architecture_implementation_complete=true
     architecture_frozen=true
@@ -1221,13 +1249,25 @@ resume 必须保存或确定性重建：
     final_to_original_run_budget_ratio=3.0
     total_search_budget_equal=false
 
+    three_dataset_v2_protocol_implemented=true
+    evaluator_and_selector_implemented=true
+    implementation_tests_passed=true
+    indexed_pair_preflight_passed=true
+    indexed_pair_count=2755
+    indexed_pair_error_count=0
+    tiny_gt_counts=[35,259,30]
+    real_gpu_smoke_passed=true
+    training_launch_authorized=true
+    formal_runtime_state_source=results/three_dataset_seed42_global_tss_v2/launch/formal/launch_plan.json
+
     current_v2_decision=INCONCLUSIVE_MIXED_TRADEOFF
     v2_global_recipe_established=false
     final_model_performance_established=false
     paper_core_established=false
     stability_claim_supported=false
     training_recipe_finalized=false
-    training_started_by_this_document=false
+    formal_training_started_at_protocol_freeze=false
+    posttraining_batch_orchestrator_complete=false
 
 一句话执行结论：
 

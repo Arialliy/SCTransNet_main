@@ -46,6 +46,7 @@ from experiments import four_dataset_evaluation_protocol_v1 as metric_core  # no
 
 
 SCHEMA = "sctransnet_three_dataset_v2_evaluation_v1"
+TRAINING_RUN_SCHEMA = "sctransnet_three_dataset_seed42_global_tss_v2/v1"
 FIXED_THRESHOLD = 0.5
 UPPER_EMPTY_THRESHOLD = 1.0
 TRAINING_SEED = 42
@@ -61,6 +62,25 @@ CHECKPOINT_FILENAMES = {
     "best_pd": "best_pd.pth.tar",
 }
 RUN_DATA_PROTOCOL_FIELD = "three_dataset_v2_data_protocol"
+REQUIRED_CHECKPOINT_METRICS = (
+    "test_loss",
+    "miou",
+    "niou",
+    "pixel_precision",
+    "pixel_recall",
+    "pixel_f1",
+    "pd",
+    "tiny_pd",
+    "fa",
+    "false_objects_per_image",
+    "target_count",
+    "matched_target_count",
+    "tiny_target_count",
+    "matched_tiny_target_count",
+    "predicted_object_count",
+    "unmatched_predicted_object_count",
+    "valid_pixel_count",
+)
 
 # Repository sources that directly define the evaluator, its threshold sweep,
 # its frozen metric implementation, or its inference graph.  Keep repository-
@@ -774,6 +794,10 @@ def _validate_run_identity(
         ("summary", summary),
         ("run protocol", run_protocol),
     ):
+        _require(
+            container.get("schema") == TRAINING_RUN_SCHEMA,
+            f"{container_name} schema differs",
+        )
         for field, expected in (
             ("dataset", request.dataset),
             ("method", request.method),
@@ -897,6 +921,7 @@ def load_checkpoint(
     payload = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     _require(isinstance(payload, dict), "checkpoint payload must be a dictionary")
     for field, expected in (
+        ("schema", TRAINING_RUN_SCHEMA),
         ("dataset", request.dataset),
         ("method", request.method),
         ("seed", TRAINING_SEED),
@@ -911,6 +936,27 @@ def load_checkpoint(
     _require(
         payload.get("protocol_sha256") == protocol_payload_sha256,
         "checkpoint protocol_sha256 differs from protocol payload",
+    )
+    epoch = payload.get("epoch")
+    _require(
+        isinstance(epoch, int)
+        and not isinstance(epoch, bool)
+        and 10 <= epoch <= 1000
+        and epoch % 10 == 0,
+        "checkpoint epoch is not a frozen candidate epoch",
+    )
+    summary_selection = summary.get(request.checkpoint_role)
+    _require(
+        isinstance(summary_selection, Mapping),
+        "summary lacks selected-role metadata",
+    )
+    _require(
+        summary_selection.get("epoch") == epoch,
+        "checkpoint epoch differs from summary selected role",
+    )
+    _require(
+        payload.get("selection_source") == f"test_{request.dataset}",
+        "checkpoint selection_source differs",
     )
     state = payload.get("state_dict")
     _require(isinstance(state, Mapping) and state, "checkpoint lacks state_dict")
@@ -995,6 +1041,11 @@ def _checkpoint_metric_audit(
 ) -> dict[str, Any]:
     raw = checkpoint_payload.get("test_metrics")
     _require(isinstance(raw, Mapping), "checkpoint lacks test_metrics")
+    missing = [key for key in REQUIRED_CHECKPOINT_METRICS if key not in raw]
+    _require(
+        not missing,
+        f"checkpoint test_metrics lacks required fields: {missing}",
+    )
     count_keys = {
         "target_count",
         "matched_target_count",

@@ -64,6 +64,34 @@ class MatrixTests(unittest.TestCase):
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_static_lock_includes_launcher_evaluator_selector_and_metric_protocol(
+        self,
+    ) -> None:
+        static = launch.validate_static_inputs()
+        sources = static["training_sources"]
+        expected = {
+            "launcher": Path(launch.__file__).resolve(),
+            "posttraining_evaluator": (
+                launch.REPO_ROOT
+                / "experiments"
+                / "evaluate_three_dataset_v2.py"
+            ),
+            "global_recipe_selector": (
+                launch.REPO_ROOT
+                / "experiments"
+                / "select_three_dataset_global_tss_recipe_v2.py"
+            ),
+            "evaluation_metric_protocol": (
+                launch.REPO_ROOT
+                / "experiments"
+                / "four_dataset_evaluation_protocol_v1.py"
+            ),
+        }
+        for key, path in expected.items():
+            self.assertIn(key, sources)
+            self.assertEqual(sources[key]["path"], str(path))
+            self.assertEqual(sources[key]["sha256"], launch.file_sha256(path))
+
     def test_compact_tss_artifact_has_exact_three_records(self) -> None:
         payload = launch.build_tss_statistics_payload()
         self.assertEqual(payload["datasets"], list(launch.DATASETS))

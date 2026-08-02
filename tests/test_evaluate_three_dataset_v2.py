@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 import numpy as np
+import torch
 
 from experiments import evaluate_three_dataset_v2 as subject
 
@@ -232,12 +233,14 @@ class FormalIdentityTest(unittest.TestCase):
                 "dataset_order": list(subject.data_protocol.DATASETS),
             }
             summary = {
+                "schema": subject.TRAINING_RUN_SCHEMA,
                 "dataset": request.dataset,
                 "method": request.method,
                 "seed": 42,
                 "epochs": 1000,
             }
             run_protocol = {
+                "schema": subject.TRAINING_RUN_SCHEMA,
                 "dataset": request.dataset,
                 "method": request.method,
                 "training_seed": 42,
@@ -305,6 +308,232 @@ class FormalIdentityTest(unittest.TestCase):
                     manifest_path=manifest_path,
                     manifest=manifest,
                 )
+
+
+class EvaluatorProvenanceTest(unittest.TestCase):
+    def _runtime_sources(self) -> dict[str, dict[str, str]]:
+        return {
+            key: {
+                "path": str(path),
+                "sha256": subject._file_sha256(path),
+            }
+            for key, path in subject._training_runtime_source_paths().items()
+        }
+
+    def _write_run(
+        self,
+        directory: str,
+        *,
+        corrupt_runtime_key: str | None = None,
+        protocol_declared: str | None = None,
+        summary_protocol: str | None = None,
+        checkpoint_protocol: str | None = None,
+        checkpoint_epoch: int = 20,
+    ) -> tuple[
+        subject.EvaluationRequest,
+        Path,
+        Path,
+        dict[str, object],
+    ]:
+        request = subject.EvaluationRequest(
+            "NUAA-SIRST", "original", "best_miou"
+        )
+        root = Path(directory)
+        run_dir = root / "run"
+        checkpoint_dir = run_dir / "checkpoints"
+        checkpoint_dir.mkdir(parents=True)
+        manifest_path = root / "manifest.json"
+        manifest_path.write_text("{}\n", encoding="utf-8")
+        manifest: dict[str, object] = {
+            "dataset_order": list(subject.data_protocol.DATASETS),
+        }
+        runtime_sources = self._runtime_sources()
+        if corrupt_runtime_key is not None:
+            runtime_sources[corrupt_runtime_key]["sha256"] = "f" * 64
+        protocol: dict[str, object] = {
+            "schema": subject.TRAINING_RUN_SCHEMA,
+            "dataset": request.dataset,
+            "method": request.method,
+            "training_seed": 42,
+            "epochs": 1000,
+            "begin_test": 10,
+            "eval_every": 10,
+            "smoke": False,
+            "dataset_counts": {
+                "train": subject.data_protocol.EXPECTED_SPLITS[
+                    request.dataset
+                ]["train"]["count"],
+                "test": subject.data_protocol.EXPECTED_SPLITS[
+                    request.dataset
+                ]["test"]["count"],
+            },
+            "test_selected": True,
+            "selection_is_optimistic": True,
+            "checkpoint_roles": ["best_miou", "best_pd"],
+            "metrics": {"threshold": 0.5},
+            subject.RUN_DATA_PROTOCOL_FIELD: {
+                "module": "experiments.three_dataset_v2_protocol",
+                "schema": subject.data_protocol.SCHEMA,
+                "manifest_id": subject.data_protocol.MANIFEST_ID,
+                "manifest_sha256": subject._file_sha256(manifest_path),
+                "datasets": list(subject.data_protocol.DATASETS),
+                "sirst3_in_formal_matrix": False,
+            },
+            "runtime_sources": runtime_sources,
+        }
+        computed_protocol_sha256 = subject._canonical_sha256(protocol)
+        declared = protocol_declared or computed_protocol_sha256
+        protocol["protocol_sha256"] = declared
+        (run_dir / "protocol.json").write_text(
+            json.dumps(protocol, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        checkpoint = {
+            "schema": subject.TRAINING_RUN_SCHEMA,
+            "dataset": request.dataset,
+            "method": request.method,
+            "seed": 42,
+            "checkpoint_role": request.checkpoint_role,
+            "selection_source": f"test_{request.dataset}",
+            "test_selected": True,
+            "selection_is_optimistic": True,
+            "epoch": checkpoint_epoch,
+            "protocol_sha256": checkpoint_protocol or declared,
+            "state_dict": {"weight": torch.tensor([1.0])},
+        }
+        checkpoint_path = checkpoint_dir / "best_miou.pth.tar"
+        torch.save(checkpoint, checkpoint_path)
+        summary = {
+            "schema": subject.TRAINING_RUN_SCHEMA,
+            "status": "complete",
+            "dataset": request.dataset,
+            "method": request.method,
+            "seed": 42,
+            "epochs": 1000,
+            "protocol_sha256": summary_protocol or declared,
+            "best_miou": {"epoch": checkpoint_epoch},
+            "checkpoints": {
+                "best_miou": {
+                    "sha256": subject._file_sha256(checkpoint_path),
+                }
+            },
+        }
+        (run_dir / "summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return request, run_dir, manifest_path, manifest
+
+    def test_emitted_source_map_is_complete_sorted_and_real(self) -> None:
+        observed = subject.evaluator_source_sha256()
+        self.assertEqual(list(observed), sorted(observed))
+        required = {
+            "experiments/evaluate_three_dataset_v2.py",
+            "experiments/three_dataset_v2_protocol.py",
+            "experiments/four_dataset_evaluation_protocol_v1.py",
+            "experiments/evaluate_pd_fa_sweep.py",
+            "experiments/evaluate_tpd_clean_v6_pd_fa.py",
+            "experiments/train_tpd_pilot.py",
+            "experiments/four_dataset_models_seed42_v1.py",
+        }
+        self.assertTrue(required.issubset(observed))
+        self.assertEqual(
+            {key for key in observed if key.startswith("model/")},
+            set(subject._model_source_paths()),
+        )
+        for relative, digest in observed.items():
+            self.assertEqual(
+                digest,
+                subject._file_sha256(subject.REPO_ROOT / relative),
+            )
+
+    def test_load_checkpoint_accepts_complete_hash_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            request, run_dir, manifest_path, manifest = self._write_run(
+                directory
+            )
+            payload, binding = subject.load_checkpoint(
+                request,
+                run_dir,
+                manifest_path=manifest_path,
+                manifest=manifest,
+            )
+        self.assertEqual(payload["checkpoint_role"], "best_miou")
+        self.assertEqual(
+            binding["protocol"]["payload_sha256"],
+            payload["protocol_sha256"],
+        )
+        self.assertIs(
+            binding["training_runtime_sources"]["validated"], True
+        )
+
+    def test_protocol_checkpoint_and_summary_hash_mismatches_reject(self) -> None:
+        cases = (
+            (
+                {"protocol_declared": "0" * 64},
+                "canonical payload hash",
+            ),
+            (
+                {"summary_protocol": "1" * 64},
+                "summary protocol_sha256",
+            ),
+            (
+                {"checkpoint_protocol": "2" * 64},
+                "checkpoint protocol_sha256",
+            ),
+        )
+        for options, message in cases:
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
+                request, run_dir, manifest_path, manifest = self._write_run(
+                    directory, **options
+                )
+                with self.assertRaisesRegex(ValueError, message):
+                    subject.load_checkpoint(
+                        request,
+                        run_dir,
+                        manifest_path=manifest_path,
+                        manifest=manifest,
+                    )
+
+    def test_changed_builder_or_model_source_rejects(self) -> None:
+        runtime_paths = subject._training_runtime_source_paths()
+        architecture_key = next(
+            key for key in runtime_paths if key.startswith("architecture::")
+        )
+        for key in ("model_builder", architecture_key):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as directory:
+                request, run_dir, manifest_path, manifest = self._write_run(
+                    directory,
+                    corrupt_runtime_key=key,
+                )
+                with self.assertRaisesRegex(
+                    ValueError, "runtime source SHA differs"
+                ):
+                    subject.load_checkpoint(
+                        request,
+                        run_dir,
+                        manifest_path=manifest_path,
+                        manifest=manifest,
+                    )
+
+    def test_checkpoint_epoch_and_required_metric_contract_rejects(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            request, run_dir, manifest_path, manifest = self._write_run(
+                directory,
+                checkpoint_epoch=11,
+            )
+            with self.assertRaisesRegex(ValueError, "candidate epoch"):
+                subject.load_checkpoint(
+                    request,
+                    run_dir,
+                    manifest_path=manifest_path,
+                    manifest=manifest,
+                )
+        with self.assertRaisesRegex(ValueError, "required fields"):
+            subject._checkpoint_metric_audit(
+                {"test_metrics": {}},
+                {},
+            )
 
 
 if __name__ == "__main__":

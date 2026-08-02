@@ -43,6 +43,7 @@ RUNNER = REPO_ROOT / "experiments" / (
     "train_three_dataset_seed42_global_tss_v2.py"
 )
 CORE_TRAINING_SOURCES = {
+    "launcher": Path(__file__).resolve(),
     "runner": RUNNER,
     "training_engine": REPO_ROOT
     / "experiments"
@@ -56,6 +57,15 @@ CORE_TRAINING_SOURCES = {
     "training_metrics_and_schedule": REPO_ROOT
     / "experiments"
     / "train_tpd_pilot.py",
+    "posttraining_evaluator": REPO_ROOT
+    / "experiments"
+    / "evaluate_three_dataset_v2.py",
+    "global_recipe_selector": REPO_ROOT
+    / "experiments"
+    / "select_three_dataset_global_tss_recipe_v2.py",
+    "evaluation_metric_protocol": REPO_ROOT
+    / "experiments"
+    / "four_dataset_evaluation_protocol_v1.py",
     "protocol_document": REPO_ROOT
     / "SCTransNet_V2全数据集混合结果复盘与全局TSS配方定型方案.md",
 }

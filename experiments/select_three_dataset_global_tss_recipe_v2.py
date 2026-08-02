@@ -45,6 +45,9 @@ from experiments import three_dataset_v2_protocol as data_protocol  # noqa: E402
 
 INPUT_SCHEMA = "sctransnet_three_dataset_global_tss_recipe_input/v2"
 OUTPUT_SCHEMA = "sctransnet_three_dataset_global_tss_recipe_selection/v2"
+LAUNCH_PLAN_SCHEMA = (
+    "sctransnet_three_dataset_seed42_global_tss_launcher_v2/v1"
+)
 
 DATASETS = tuple(data_protocol.DATASETS)
 CHECKPOINT_ROLES = ("best_miou", "best_pd")
@@ -76,6 +79,15 @@ HIGHER_IS_BETTER = {
 }
 QUANTIZATION_STEP = Decimal("0.0001")
 SERIOUS_IOU_DROP_QUANTA = 50  # 0.005 / 0.0001
+
+SELECTOR_SOURCE_PATH = Path(__file__).resolve()
+DATA_PROTOCOL_SOURCE_PATH = Path(data_protocol.__file__).resolve()
+SOURCE_PATHS = {
+    "experiments/select_three_dataset_global_tss_recipe_v2.py": (
+        SELECTOR_SOURCE_PATH
+    ),
+    "experiments/three_dataset_v2_protocol.py": DATA_PROTOCOL_SOURCE_PATH,
+}
 
 
 class SelectorInputError(ValueError):
@@ -165,6 +177,28 @@ def _canonical_json_bytes(value: Any) -> bytes:
 
 def _input_sha256(payload: Mapping[str, Any]) -> str:
     return hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+
+
+def _file_sha256(path: Path) -> str:
+    candidate = Path(path)
+    if candidate.is_symlink() or not candidate.is_file():
+        raise SelectorInputError(
+            f"source must be a regular non-symlink file: {candidate}"
+        )
+    digest = hashlib.sha256()
+    with candidate.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def selector_source_sha256() -> dict[str, str]:
+    """Hash the selector and its frozen data protocol at selection time."""
+
+    return {
+        relative: _file_sha256(path)
+        for relative, path in SOURCE_PATHS.items()
+    }
 
 
 def _normalize_point(raw: Any, label: str) -> dict[str, Any]:
@@ -826,6 +860,16 @@ def select_global_recipe(payload: Mapping[str, Any]) -> dict[str, Any]:
         "candidate_ranking": candidate_ranking,
         "candidates": candidate_records,
         "input_sha256": _input_sha256(payload),
+        "source_sha256": selector_source_sha256(),
+        "launch_plan_binding": {
+            "provided": False,
+            "validated": False,
+            "required_for_preregistered_source_binding": True,
+            "launch_plan_path": None,
+            "launch_plan_sha256": None,
+            "frozen_selector_sha256": None,
+            "frozen_data_protocol_sha256": None,
+        },
         "no_fabricated_results": True,
         "claim_scope": "fixed_seed42_img_idx_test_selected_recipe_search",
     }
@@ -853,6 +897,103 @@ def load_json(path: Path) -> dict[str, Any]:
     )
     _require(isinstance(payload, dict), "input JSON root must be an object")
     return payload
+
+
+def validate_launch_plan_binding(
+    path: Path,
+    *,
+    current_sources: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """Validate the launch plan's preregistered selector/protocol source lock."""
+
+    candidate = Path(path)
+    launch_plan_sha256 = _file_sha256(candidate)
+    plan = load_json(candidate)
+    _require(
+        _file_sha256(candidate) == launch_plan_sha256,
+        "launch plan changed while its source binding was validated",
+    )
+    _require(
+        plan.get("schema") == LAUNCH_PLAN_SCHEMA,
+        f"launch plan schema must be {LAUNCH_PLAN_SCHEMA!r}",
+    )
+    _require(
+        plan.get("dataset_order") == list(DATASETS),
+        "launch plan dataset_order differs from the selector protocol",
+    )
+    for field, expected in (
+        ("worker_count", 12),
+        ("original_run_count", ORIGINAL_RUN_COUNT),
+        ("final_run_count", FINAL_SEARCH_RUN_COUNT),
+        ("total_search_budget_equal", False),
+        ("final_to_original_run_budget_ratio", 3.0),
+    ):
+        _require(
+            plan.get(field) == expected,
+            f"launch plan {field} must be {expected!r}",
+        )
+    static_inputs = _mapping(plan.get("static_inputs"), "launch_plan.static_inputs")
+    training_sources = _mapping(
+        static_inputs.get("training_sources"),
+        "launch_plan.static_inputs.training_sources",
+    )
+    observed_sources = selector_source_sha256()
+    if current_sources is not None:
+        _require(
+            dict(current_sources) == observed_sources,
+            "selector source files changed after the selection result was built",
+        )
+    sources = observed_sources
+    required = {
+        "global_recipe_selector": (
+            "experiments/select_three_dataset_global_tss_recipe_v2.py",
+            SELECTOR_SOURCE_PATH,
+        ),
+        "data_protocol": (
+            "experiments/three_dataset_v2_protocol.py",
+            DATA_PROTOCOL_SOURCE_PATH,
+        ),
+    }
+    frozen: dict[str, str] = {}
+    for source_name, (relative, expected_path) in required.items():
+        record = _mapping(
+            training_sources.get(source_name),
+            f"launch_plan static source {source_name}",
+        )
+        observed_path = record.get("path")
+        _require(
+            isinstance(observed_path, str)
+            and Path(observed_path).resolve() == expected_path,
+            f"launch plan source path differs for {source_name}",
+        )
+        planned_digest = record.get("sha256")
+        _require(
+            isinstance(planned_digest, str)
+            and len(planned_digest) == 64
+            and all(character in "0123456789abcdef" for character in planned_digest),
+            f"launch plan source SHA-256 is invalid for {source_name}",
+        )
+        _require(
+            planned_digest == sources[relative],
+            f"launch plan frozen {source_name} SHA-256 differs from current source",
+        )
+        frozen[relative] = planned_digest
+    return {
+        "provided": True,
+        "validated": True,
+        "required_for_preregistered_source_binding": True,
+        "launch_plan_path": str(candidate.resolve()),
+        "launch_plan_sha256": launch_plan_sha256,
+        "launch_plan_schema": LAUNCH_PLAN_SCHEMA,
+        "frozen_selector_sha256": frozen[
+            "experiments/select_three_dataset_global_tss_recipe_v2.py"
+        ],
+        "frozen_data_protocol_sha256": frozen[
+            "experiments/three_dataset_v2_protocol.py"
+        ],
+        "frozen_source_sha256": frozen,
+        "matches_current_source_sha256": True,
+    }
 
 
 def atomic_write_json(path: Path, payload: Mapping[str, Any], *, overwrite: bool) -> None:
@@ -888,6 +1029,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--launch-plan",
+        type=Path,
+        help=(
+            "Optionally require and record the prepared 12-run plan's frozen "
+            "selector/data-protocol SHA-256 binding."
+        ),
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args(argv)
 
@@ -896,6 +1045,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     payload = load_json(args.input)
     result = select_global_recipe(payload)
+    if args.launch_plan is not None:
+        result["launch_plan_binding"] = validate_launch_plan_binding(
+            args.launch_plan,
+            current_sources=result["source_sha256"],
+        )
     atomic_write_json(args.output, result, overwrite=args.overwrite)
     print(json.dumps(result, ensure_ascii=False, allow_nan=False, sort_keys=True))
     return 0
