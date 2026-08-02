@@ -62,6 +62,19 @@ CHECKPOINT_FILENAMES = {
 }
 RUN_DATA_PROTOCOL_FIELD = "three_dataset_v2_data_protocol"
 
+# Repository sources that directly define the evaluator, its threshold sweep,
+# its frozen metric implementation, or its inference graph.  Keep repository-
+# relative names as the public keys so the emitted map is location-independent.
+_EVALUATOR_NON_MODEL_SOURCES = (
+    "experiments/evaluate_three_dataset_v2.py",
+    "experiments/three_dataset_v2_protocol.py",
+    "experiments/four_dataset_evaluation_protocol_v1.py",
+    "experiments/evaluate_pd_fa_sweep.py",
+    "experiments/evaluate_tpd_clean_v6_pd_fa.py",
+    "experiments/train_tpd_pilot.py",
+    "experiments/four_dataset_models_seed42_v1.py",
+)
+
 # Keep the evaluator bound to the protocol's single normalization source.
 # The per-dataset copies prevent accidental mutation of that frozen mapping.
 NORMALIZATION = {
@@ -84,6 +97,131 @@ def _file_sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _canonical_sha256(value: Any) -> str:
+    """Match the training engine's protocol-payload hash exactly."""
+
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _model_source_paths() -> dict[str, Path]:
+    model_root = REPO_ROOT / "model"
+    paths = {
+        path.relative_to(REPO_ROOT).as_posix(): path.resolve()
+        for path in sorted(model_root.rglob("*.py"))
+    }
+    _require(bool(paths), "repository model source set is empty")
+    return dict(sorted(paths.items()))
+
+
+def evaluator_source_sha256() -> dict[str, str]:
+    """Hash every in-repository implementation used by formal evaluation."""
+
+    paths = {
+        relative: (REPO_ROOT / relative).resolve()
+        for relative in _EVALUATOR_NON_MODEL_SOURCES
+    }
+    for relative, path in _model_source_paths().items():
+        _require(relative not in paths, f"duplicate evaluator source: {relative}")
+        paths[relative] = path
+    return {
+        relative: _file_sha256(path)
+        for relative, path in sorted(paths.items())
+    }
+
+
+def _training_runtime_source_paths() -> dict[str, Path]:
+    """Sources whose training-time bytes must still define inference."""
+
+    paths: dict[str, Path] = {
+        "model_builder": (
+            REPO_ROOT / "experiments" / "four_dataset_models_seed42_v1.py"
+        ).resolve(),
+        "training_metrics_and_schedule": (
+            REPO_ROOT / "experiments" / "train_tpd_pilot.py"
+        ).resolve(),
+    }
+    for relative, path in _model_source_paths().items():
+        paths[f"architecture::{relative}"] = path
+    return dict(sorted(paths.items()))
+
+
+def _validate_training_runtime_sources(
+    run_protocol: Mapping[str, Any],
+) -> dict[str, str]:
+    """Reject inference under source bytes unlike those frozen at training."""
+
+    frozen = run_protocol.get("runtime_sources")
+    _require(isinstance(frozen, Mapping), "run protocol lacks runtime_sources")
+    expected = _training_runtime_source_paths()
+    expected_architecture = {
+        key for key in expected if key.startswith("architecture::")
+    }
+    frozen_architecture = {
+        key
+        for key in frozen
+        if isinstance(key, str) and key.startswith("architecture::")
+    }
+    _require(
+        frozen_architecture == expected_architecture,
+        "run protocol architecture source set differs from current model tree",
+    )
+    verified: dict[str, str] = {}
+    for key, expected_path in expected.items():
+        entry = frozen.get(key)
+        _require(
+            isinstance(entry, Mapping),
+            f"run protocol runtime source is missing or malformed: {key}",
+        )
+        frozen_path = entry.get("path")
+        _require(
+            isinstance(frozen_path, str) and bool(frozen_path),
+            f"run protocol runtime source path is malformed: {key}",
+        )
+        _require(
+            Path(frozen_path).resolve(strict=True) == expected_path,
+            f"run protocol runtime source path differs: {key}",
+        )
+        current_sha256 = _file_sha256(expected_path)
+        _require(
+            entry.get("sha256") == current_sha256,
+            f"run protocol runtime source SHA differs: {key}",
+        )
+        verified[key] = current_sha256
+    return dict(sorted(verified.items()))
+
+
+def _validate_protocol_payload_and_summary_hash(
+    summary: Mapping[str, Any],
+    run_protocol: Mapping[str, Any],
+) -> str:
+    """Validate the trainer's self-excluding canonical protocol hash."""
+
+    declared = run_protocol.get("protocol_sha256")
+    _require(
+        isinstance(declared, str) and len(declared) == 64,
+        "protocol payload lacks a valid protocol_sha256",
+    )
+    unsigned_payload = dict(run_protocol)
+    del unsigned_payload["protocol_sha256"]
+    computed = _canonical_sha256(unsigned_payload)
+    _require(
+        declared == computed,
+        "protocol payload protocol_sha256 differs from canonical payload hash",
+    )
+    _require(
+        summary.get("protocol_sha256") == computed,
+        "summary protocol_sha256 differs from protocol payload",
+    )
+    return computed
 
 
 def _atomic_write_json(
@@ -739,6 +877,11 @@ def load_checkpoint(
         manifest_path=manifest_path,
         manifest=manifest,
     )
+    protocol_payload_sha256 = _validate_protocol_payload_and_summary_hash(
+        summary,
+        run_protocol,
+    )
+    verified_runtime_sources = _validate_training_runtime_sources(run_protocol)
     checkpoint_path = (
         run_dir / "checkpoints" / CHECKPOINT_FILENAMES[request.checkpoint_role]
     )
@@ -765,6 +908,10 @@ def load_checkpoint(
             payload.get(field) == expected,
             f"checkpoint {field} differs: {payload.get(field)!r} != {expected!r}",
         )
+    _require(
+        payload.get("protocol_sha256") == protocol_payload_sha256,
+        "checkpoint protocol_sha256 differs from protocol payload",
+    )
     state = payload.get("state_dict")
     _require(isinstance(state, Mapping) and state, "checkpoint lacks state_dict")
     observed_weight = _observed_requested_weight(payload, run_protocol)
@@ -787,6 +934,7 @@ def load_checkpoint(
         "protocol": {
             "path": str(protocol_path),
             "sha256": _file_sha256(protocol_path),
+            "payload_sha256": protocol_payload_sha256,
         },
         "checkpoint": {
             "path": str(checkpoint_path),
@@ -795,6 +943,10 @@ def load_checkpoint(
             "role": request.checkpoint_role,
         },
         "requested_tss_weight": observed_weight,
+        "training_runtime_sources": {
+            "validated": True,
+            "source_sha256": verified_runtime_sources,
+        },
     }
 
 
@@ -1001,14 +1153,7 @@ def evaluate_run(
             "prediction_comparison": "probability > threshold",
             "score_dtype": "float32",
         },
-        "source_sha256": {
-            "experiments/evaluate_three_dataset_v2.py": _file_sha256(
-                Path(__file__).resolve()
-            ),
-            "experiments/three_dataset_v2_protocol.py": _file_sha256(
-                Path(data_protocol.__file__).resolve()
-            ),
-        },
+        "source_sha256": evaluator_source_sha256(),
         "no_fabricated_results": True,
         "stability_claim_supported": False,
     }

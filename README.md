@@ -76,6 +76,9 @@ evaluator、launcher 和 selector 已完成，但正式训练启动与代码实�
 - `experiments/evaluate_three_dataset_v2.py`
 - `experiments/select_three_dataset_global_tss_recipe_v2.py`
 
+V2 evaluator 还会绑定模型树、训练运行时和 Pd–Fa 评估实现的 SHA-256，拒绝在
+源码与训练协议不一致时复用结果。
+
 ## 固定 seed-42 最终模型工程认证闭环
 
 最终完整模型为 `SCTransNet + TPD V8-MPRS-DCH + 五节点 NER V4
