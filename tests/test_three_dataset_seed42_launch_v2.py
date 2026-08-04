@@ -92,6 +92,40 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(sources[key]["path"], str(path))
             self.assertEqual(sources[key]["sha256"], launch.file_sha256(path))
 
+    def test_completed_run_uses_exact_training_runtime_source_subset(self) -> None:
+        planned = launch.validate_static_inputs()["training_sources"]
+        runtime = {
+            name: dict(record)
+            for name, record in launch._planned_training_runtime_sources(
+                planned
+            ).items()
+        }
+        self.assertTrue(launch.PLAN_ONLY_SOURCE_NAMES.issubset(planned))
+        self.assertTrue(launch.PLAN_ONLY_SOURCE_NAMES.isdisjoint(runtime))
+        launch._validate_run_runtime_sources(
+            runtime,
+            planned,
+            spec_key="mock-complete-run",
+        )
+
+        missing = dict(runtime)
+        missing.pop("runner")
+        with self.assertRaises(launch.LaunchProtocolError):
+            launch._validate_run_runtime_sources(
+                missing,
+                planned,
+                spec_key="mock-complete-run",
+            )
+
+        tampered = {name: dict(record) for name, record in runtime.items()}
+        tampered["runner"]["sha256"] = "f" * 64
+        with self.assertRaises(launch.LaunchProtocolError):
+            launch._validate_run_runtime_sources(
+                tampered,
+                planned,
+                spec_key="mock-complete-run",
+            )
+
     def test_compact_tss_artifact_has_exact_three_records(self) -> None:
         payload = launch.build_tss_statistics_payload()
         self.assertEqual(payload["datasets"], list(launch.DATASETS))

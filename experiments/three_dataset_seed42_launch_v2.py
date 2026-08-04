@@ -69,6 +69,33 @@ CORE_TRAINING_SOURCES = {
     "protocol_document": REPO_ROOT
     / "SCTransNet_V2全数据集混合结果复盘与全局TSS配方定型方案.md",
 }
+
+# ``static_inputs.training_sources`` locks the complete formal experiment
+# chain, including orchestration and post-training evaluation sources.  A
+# trainer run can only record the files that define its training trajectory in
+# ``protocol.json.runtime_sources``.  Keep this subset explicit so completed
+# runs are checked against their actual runtime contract without weakening the
+# broader launch-plan lock.
+TRAINING_RUNTIME_SOURCE_NAMES = frozenset(
+    {
+        "runner",
+        "training_engine",
+        "data_protocol",
+        "torch_datasets",
+        "model_builder",
+        "training_loss",
+        "training_metrics_and_schedule",
+        "protocol_document",
+    }
+)
+PLAN_ONLY_SOURCE_NAMES = frozenset(
+    {
+        "launcher",
+        "posttraining_evaluator",
+        "global_recipe_selector",
+        "evaluation_metric_protocol",
+    }
+)
 TRAINER_SCHEMA = "sctransnet_three_dataset_seed42_global_tss_v2/v1"
 DATA_ROOT = REPO_ROOT / "datasets"
 RESULTS_ROOT = REPO_ROOT / "results" / (
@@ -81,6 +108,15 @@ PAIR_AUDIT = ARTIFACT_ROOT / "three_dataset_v2_pair_audit.json"
 LAUNCH_PLAN = RESULTS_ROOT / "launch" / "formal" / "launch_plan.json"
 SUPERVISOR_LOCK = RESULTS_ROOT / "launch" / "formal" / "supervisor.lock"
 SUPERVISOR_STATUS = RESULTS_ROOT / "launch" / "formal" / "supervisor_status.json"
+RECOVERY_PLAN_ARCHIVE = RESULTS_ROOT / "launch" / "formal" / (
+    "launch_plan.before_runtime_source_contract_fix.json"
+)
+RECOVERY_STATUS_ARCHIVE = RESULTS_ROOT / "launch" / "formal" / (
+    "supervisor_status.before_runtime_source_contract_fix.json"
+)
+SUPERVISOR_CONSOLE = RESULTS_ROOT / "launch" / "formal" / (
+    "supervisor_console.log"
+)
 TSS_PROVENANCE_SOURCE = (
     REPO_ROOT
     / "results"
@@ -692,7 +728,9 @@ def verify_prepared_artifacts(plan: Mapping[str, Any]) -> None:
             raise LaunchProtocolError(f"prepared {label} changed")
 
 
-def prepare_launch_plan() -> dict[str, Any]:
+def prepare_launch_plan(
+    *, recovery: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     static = validate_static_inputs()
     tss = prepare_tss_statistics()
     pair_audit = audit_all_indexed_pairs()
@@ -725,8 +763,131 @@ def prepare_launch_plan() -> dict[str, Any]:
         },
         "workers": [command_record(spec) for spec in specs],
     }
+    if recovery is not None:
+        plan["recovery"] = dict(recovery)
     write_json_atomic(LAUNCH_PLAN, plan)
     return plan
+
+
+def _archive_json_once(path: Path, payload: Mapping[str, Any]) -> None:
+    """Preserve a canonical pre-recovery JSON artifact without overwriting it."""
+
+    if path.exists():
+        observed = json.loads(path.read_text(encoding="utf-8"))
+        if observed != dict(payload):
+            raise LaunchProtocolError(f"recovery archive already differs: {path}")
+        return
+    write_json_atomic(path, payload)
+
+
+def prepare_runtime_source_contract_recovery() -> dict[str, Any]:
+    """Create an auditable plan that reuses valid runs after the V2 lock fix."""
+
+    if not LAUNCH_PLAN.is_file():
+        raise LaunchProtocolError("no existing launch plan is available to recover")
+    previous_bytes_sha256 = file_sha256(LAUNCH_PLAN)
+    previous = json.loads(LAUNCH_PLAN.read_text(encoding="utf-8"))
+    if previous.get("schema") != SCHEMA or previous.get("training_started") is not True:
+        raise LaunchProtocolError("existing launch plan is not a started V2 plan")
+    specs = build_all_worker_specs()
+    expected_workers = [command_record(spec) for spec in specs]
+    if previous.get("workers") != expected_workers:
+        raise LaunchProtocolError("existing worker matrix differs during recovery")
+
+    previous_static = previous.get("static_inputs")
+    if not isinstance(previous_static, Mapping):
+        raise LaunchProtocolError("existing launch plan has no static source lock")
+    current_static = validate_static_inputs()
+    previous_without_sources = {
+        key: value
+        for key, value in previous_static.items()
+        if key != "training_sources"
+    }
+    current_without_sources = {
+        key: value
+        for key, value in current_static.items()
+        if key != "training_sources"
+    }
+    if previous_without_sources != current_without_sources:
+        raise LaunchProtocolError(
+            "non-source static inputs changed before launcher recovery"
+        )
+    previous_sources = previous_static.get("training_sources")
+    current_sources = current_static.get("training_sources")
+    if not isinstance(previous_sources, Mapping) or not isinstance(
+        current_sources, Mapping
+    ):
+        raise LaunchProtocolError("source records are missing during recovery")
+    if set(previous_sources) != set(current_sources):
+        raise LaunchProtocolError("source-name set changed during launcher recovery")
+    changed_sources = sorted(
+        name
+        for name in previous_sources
+        if previous_sources[name] != current_sources[name]
+    )
+    if changed_sources != ["launcher"]:
+        raise LaunchProtocolError(
+            f"recovery permits only the launcher source change: {changed_sources}"
+        )
+    if previous_sources["launcher"].get("path") != current_sources[
+        "launcher"
+    ].get("path"):
+        raise LaunchProtocolError("launcher path changed during recovery")
+
+    completed_workers: list[str] = []
+    for spec in specs:
+        if _spec_is_complete(
+            spec,
+            static_inputs=previous_static,
+            tss_sha256=previous["tss_statistics"]["sha256"],
+        ):
+            completed_workers.append(spec.key)
+    if not completed_workers:
+        raise LaunchProtocolError("recovery found no completed workers to reuse")
+
+    _archive_json_once(RECOVERY_PLAN_ARCHIVE, previous)
+    previous_status: Mapping[str, Any] | None = None
+    previous_status_sha256: str | None = None
+    if SUPERVISOR_STATUS.is_file():
+        previous_status_sha256 = file_sha256(SUPERVISOR_STATUS)
+        loaded_status = json.loads(SUPERVISOR_STATUS.read_text(encoding="utf-8"))
+        if not isinstance(loaded_status, Mapping):
+            raise LaunchProtocolError("existing supervisor status is malformed")
+        previous_status = loaded_status
+        _archive_json_once(RECOVERY_STATUS_ARCHIVE, previous_status)
+
+    recovery = {
+        "schema": (
+            "sctransnet_three_dataset_seed42_global_tss_"
+            "runtime_source_contract_recovery/v1"
+        ),
+        "reason": (
+            "plan-only orchestration and post-training sources were "
+            "incorrectly required in each completed run runtime source set"
+        ),
+        "prior_launch_plan": str(RECOVERY_PLAN_ARCHIVE),
+        "prior_launch_plan_sha256": previous_bytes_sha256,
+        "prior_supervisor_status": (
+            str(RECOVERY_STATUS_ARCHIVE) if previous_status is not None else None
+        ),
+        "prior_supervisor_status_sha256": previous_status_sha256,
+        "prior_supervisor_console": (
+            str(SUPERVISOR_CONSOLE) if SUPERVISOR_CONSOLE.is_file() else None
+        ),
+        "prior_supervisor_console_sha256": (
+            file_sha256(SUPERVISOR_CONSOLE)
+            if SUPERVISOR_CONSOLE.is_file()
+            else None
+        ),
+        "prior_launcher_sha256": previous_sources["launcher"]["sha256"],
+        "recovery_launcher_sha256": current_sources["launcher"]["sha256"],
+        "changed_static_sources": changed_sources,
+        "training_runtime_source_changes": [],
+        "worker_commands_changed": False,
+        "completed_workers_reused": completed_workers,
+        "retrain_completed_workers": False,
+    }
+    return prepare_launch_plan(recovery=recovery)
 
 
 def _expected_recipe(spec: WorkerSpec) -> dict[str, Any]:
@@ -748,6 +909,74 @@ def _expected_recipe(spec: WorkerSpec) -> dict[str, Any]:
         "tss_ratio_cap": 0.10,
         "tss_enabled": True,
     }
+
+
+def _planned_training_runtime_sources(
+    planned_sources: Mapping[str, Any],
+) -> dict[str, Mapping[str, Any]]:
+    """Return the exact launch-plan subset recorded by trainer protocols."""
+
+    selected: dict[str, Mapping[str, Any]] = {}
+    for name, record in planned_sources.items():
+        if name in TRAINING_RUNTIME_SOURCE_NAMES or name.startswith(
+            "architecture::"
+        ):
+            if not isinstance(record, Mapping):
+                raise LaunchProtocolError(
+                    f"planned runtime source record is malformed: {name}"
+                )
+            selected[name] = record
+    missing = sorted(TRAINING_RUNTIME_SOURCE_NAMES.difference(selected))
+    if missing:
+        raise LaunchProtocolError(
+            f"planned training runtime source lock is incomplete: {missing}"
+        )
+    architecture_names = {
+        name for name in selected if name.startswith("architecture::")
+    }
+    if not architecture_names:
+        raise LaunchProtocolError(
+            "planned training runtime source lock has no architecture sources"
+        )
+    return selected
+
+
+def _validate_run_runtime_sources(
+    runtime: Mapping[str, Any],
+    planned_sources: Mapping[str, Any],
+    *,
+    spec_key: str,
+) -> None:
+    """Bind a completed run to its exact training-time source subset."""
+
+    expected = _planned_training_runtime_sources(planned_sources)
+    if set(runtime) != set(expected):
+        missing = sorted(set(expected).difference(runtime))
+        unexpected = sorted(set(runtime).difference(expected))
+        raise LaunchProtocolError(
+            f"runtime source set differs for {spec_key}: "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+    for name, planned_record in expected.items():
+        runtime_record = runtime.get(name)
+        if not isinstance(runtime_record, Mapping):
+            raise LaunchProtocolError(
+                f"runtime source {name} is malformed for {spec_key}"
+            )
+        planned_path = planned_record.get("path")
+        runtime_path = runtime_record.get("path")
+        if (
+            not isinstance(planned_path, str)
+            or not isinstance(runtime_path, str)
+            or Path(runtime_path).resolve() != Path(planned_path).resolve()
+        ):
+            raise LaunchProtocolError(
+                f"runtime source {name} path differs for {spec_key}"
+            )
+        if runtime_record.get("sha256") != planned_record.get("sha256"):
+            raise LaunchProtocolError(
+                f"runtime source {name} SHA differs for {spec_key}"
+            )
 
 
 def _validate_complete_spec(
@@ -830,13 +1059,11 @@ def _validate_complete_spec(
     planned_sources = static_inputs.get("training_sources")
     if not isinstance(runtime, Mapping) or not isinstance(planned_sources, Mapping):
         raise LaunchProtocolError(f"runtime source lock missing for {spec.key}")
-    for name, planned_record in planned_sources.items():
-        if not isinstance(planned_record, Mapping) or runtime.get(name, {}).get(
-            "sha256"
-        ) != planned_record.get("sha256"):
-            raise LaunchProtocolError(
-                f"runtime source {name} differs for {spec.key}"
-            )
+    _validate_run_runtime_sources(
+        runtime,
+        planned_sources,
+        spec_key=spec.key,
+    )
     if spec.method == "final" and protocol_payload.get("tss", {}).get(
         "sha256"
     ) != tss_sha256:
@@ -941,15 +1168,32 @@ def _execute_wave(
             },
         )
         raise LaunchProtocolError("worker wave failed: " + "; ".join(failures))
-    for spec, _, _, _ in active:
-        if not _spec_is_complete(
-            spec,
-            static_inputs=static_inputs,
-            tss_sha256=tss_sha256,
-        ):
-            raise LaunchProtocolError(
-                f"worker exited successfully without a complete run: {spec.key}"
-            )
+    try:
+        for spec, _, _, _ in active:
+            if not _spec_is_complete(
+                spec,
+                static_inputs=static_inputs,
+                tss_sha256=tss_sha256,
+            ):
+                raise LaunchProtocolError(
+                    "worker exited successfully without a complete run: "
+                    f"{spec.key}"
+                )
+    except Exception as error:
+        write_json_atomic(
+            SUPERVISOR_STATUS,
+            {
+                "schema": SCHEMA,
+                "status": "postvalidation_failed",
+                "current_wave": wave,
+                "completed_waves": list(completed_waves),
+                "active_workers": [],
+                "error_type": type(error).__name__,
+                "error": str(error),
+                "updated_at_unix": time.time(),
+            },
+        )
+        raise
 
 
 def execute_prepared_plan(plan: Mapping[str, Any]) -> None:
@@ -1029,12 +1273,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="start the six formal waves; default only prepares the plan",
     )
+    parser.add_argument(
+        "--recover-runtime-source-contract",
+        action="store_true",
+        help=(
+            "archive a previously started plan, record the launcher-only "
+            "validation fix, and reuse completed workers"
+        ),
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    plan = prepare_launch_plan()
+    if args.recover_runtime_source_contract:
+        if not args.execute:
+            raise LaunchProtocolError(
+                "--recover-runtime-source-contract requires --execute"
+            )
+        plan = prepare_runtime_source_contract_recovery()
+    else:
+        plan = prepare_launch_plan()
     print(
         f"PREPARED workers={plan['worker_count']} waves={plan['wave_count']} "
         f"plan={LAUNCH_PLAN}",
