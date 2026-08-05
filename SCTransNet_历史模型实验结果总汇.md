@@ -1,6 +1,6 @@
 # SCTransNet 历史模型实验结果总汇
 
-更新时间：2026-08-04
+更新时间：2026-08-05
 
 ## 1. 汇总结论
 
@@ -24,12 +24,18 @@
 7. EC-TSS V3.1 的 seed 42、三数据集、1000-epoch 训练与六个 checkpoint 复评已经
    完成。它在 6 个 dataset-role 单元中贡献 4 个独有非支配点，但严重退化门、旧强项
    保留门和成对多数门均未通过，因此不能成为统一 TSS 配方。
+8. NER→QFG→TPD 的三数据集固定权重组件诊断已闭环：NER stage 2 启动门
+   未通过，QFG 和 TPD 均为“存在功能影响但没有跨数据集实质改善”。因此当前
+   保持 `TPD8 + NER4 + QFG2`、`TSS OFF`，不启动 NER V5、QFG/TPD 公式修改或新的重训。
 
 当前总裁决仍为：
 
 ```text
 decision = INCONCLUSIVE_MIXED_TRADEOFF
 ec_tss_v3_1_decision = EC_TSS_V3_1_PERFORMANCE_FAIL_STOP_TSS_OPTIMIZATION
+ner_stage2_decision = DO_NOT_AUTHORIZE_NER_V5_PER_DEVELOPMENT_TRAINING
+qfg_decision = QFG_INCONCLUSIVE_NO_FORMULA_CHANGE
+tpd_decision = TPD_INCONCLUSIVE_NO_FORMULA_CHANGE
 paper_core_established = false
 stability_claim_supported = false
 ```
@@ -467,7 +473,119 @@ training_recipe_finalized = false
 新候选必须完成正式 1000-epoch 的 `best_miou` 与 `best_pd` 两角色评估；不能因为单一
 数据集或单一 Pd 数值改善就接入下一模块。
 
-## 12. 权威结果来源
+## 12. NER/QFG/TPD 固定权重组件诊断
+
+实验口径：seed 42、三个数据集各自的 TSS-off `best_miou` checkpoint、
+`img_idx/test`、固定阈值 0.5。这是 test-selected 开发协议下的固定权重反事实诊断，
+不是独立测试或多 seed 稳定性实验。
+
+### 12.1 NER stage 2 启动门
+
+NER stage2-only mask knockout 的冻结触发式为 `A AND (B OR C)`。正式聚合结果为：
+
+| Gate | 通过数据集 | 要求 | 结果 |
+|---|---:|---:|:---:|
+| A | 0/3 | 至少 2/3 | FAIL |
+| B | 0/3 | 至少 2/3 | FAIL |
+| C | 3/3 | 至少 2/3 | PASS |
+
+由于 A 失败，整体启动门失败；决策为
+`DO_NOT_AUTHORIZE_NER_V5_PER_DEVELOPMENT_TRAINING`。因此不授权 NER V5-PER
+development1000 训练，NER 保持 V4 Tail-Aware。
+
+### 12.2 QFG 固定权重裁决
+
+QFG 四个单 level knockout 均没有形成稳定的跨数据集影响；`all_off`
+相对 full 与 full 相对 `all_off` 的 safe-material improvement 都是 0/3，
+严重退化也都是 0/3。同时 full/`all_off` 在 3/3 数据集上存在功能差异，
+所以 QFG 不能直接删除，也没有证据支持设计 QFG V3。正式决策为：
+
+```text
+qfg_decision = QFG_INCONCLUSIVE_NO_FORMULA_CHANGE
+qfg_v3_remove_levels_authorized = false
+qfg_off_candidate_authorized = false
+```
+
+### 12.3 TPD full 与 all7-off 完整固定点
+
+`all7_off` 只把七个 TPD block 的完整 `saliency_scale` 向量置零，仍保留
+Keep/SPD 下采样路径；因此它评估的是已训练 TPD8 residual 的固定权重贡献，
+不是“关闭整个 TPD”。`unmatched` 为 component-Fa 的未匹配预测像素分子，
+`background FP` 为所有 GT-background 上的阳性预测像素数。
+
+| 数据集 | 模式 | Pd | tiny-Pd | unmatched | background FP | Fa | mIoU | nIoU |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | full | 256/263（0.973384030） | 30/35（0.857142857） | 225 | 938 | 1.5435192156e-5 | 0.796482951 | 0.795348496 |
+| NUAA-SIRST | all7_off | 256/263（0.973384030） | 30/35（0.857142857） | 225 | 940 | 1.5435192156e-5 | 0.796204974 | 0.794804433 |
+| NUDT-SIRST | full | 936/945（0.990476190） | 258/259（0.996138996） | 121 | 591 | 2.7805925852e-6 | 0.944406006 | 0.946423233 |
+| NUDT-SIRST | all7_off | 935/945（0.989417989） | 257/259（0.992277992） | 118 | 569 | 2.7116522732e-6 | 0.944363662 | 0.946266193 |
+| IRSTD-1K | full | 277/297（0.932659933） | 23/30（0.766666667） | 618 | 2093 | 1.1728770697e-5 | 0.660311541 | 0.665661745 |
+| IRSTD-1K | all7_off | 277/297（0.932659933） | 23/30（0.766666667） | 625 | 2086 | 1.1861620851e-5 | 0.659927798 | 0.664741929 |
+
+三个数据集的变化都很小且方向混合：NUAA 的 Pd、tiny-Pd、unmatched 和 Fa
+不变，但区域 IoU 略降；NUDT 用少 1 个目标和少 1 个 tiny target 换取更低的
+unmatched 与 background FP；IRSTD-1K 保持 Pd/tiny-Pd，但 component-Fa 像素与
+IoU 退化。没有一个方向达到冻结的 material 改善门。
+
+### 12.4 七个单 block 与 all7 跨数据集门
+
+| 模式 | off 相对 full safe-material | off 相对 full severe | full 相对 off safe-material | full 相对 off severe | persistent harmful |
+|---|---:|---:|---:|---:|:---:|
+| e1b0_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| e1b1_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| e1b2_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| e1b3_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| e2b0_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| e2b1_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| e2b2_off | 0/3 | 0/3 | 0/3 | 0/3 | false |
+| all7_off | 0/3 | 0/3 | 0/3 | 0/3 | 不适用 |
+
+七个单 block 的跨数据集 material improvement 和 severe/harm 均为 0/3，
+因此 `persistent_harmful_block_ids=[]`。`all7_off` 相对 full 和 full 相对
+`all7_off` 也都是 safe-material 0/3、severe 0/3。
+
+### 12.5 功能差异、区域统计与最终决策
+
+full 与 `all7_off` 的概率输出在 3/3 数据集上都超过冻结的功能等价容差：
+
+| 数据集 | max-abs probability difference | mean-abs probability difference | 功能差异 |
+|---|---:|---:|:---:|
+| NUAA-SIRST | 0.069839656 | 1.2421815594e-6 | YES |
+| NUDT-SIRST | 0.485106006 | 2.1746451257e-6 | YES |
+| IRSTD-1K | 0.146938682 | 2.6068548838e-6 | YES |
+
+full 推理的七个 block 区域统计中，目标区 residual RMS 在三个数据集均高于
+背景区 residual RMS，即 21/21 个 dataset-block 组合都为正差值。三数据集的七块
+`target RMS - background RMS` 范围分别为：NUAA `0.023510585–0.097152975`、
+NUDT `0.162237070–0.865750660`、IRSTD-1K `0.430354341–1.643060837`。
+
+这些结果证明 TPD residual 确实进入最终输出，并且其响应在聚合意义上更偏向
+目标区；但它们没有建立 full 或任一 off 方向的跨数据集性能优势。因此正式决策为：
+
+```text
+tpd_decision = TPD_INCONCLUSIVE_NO_FORMULA_CHANGE
+tpd_local_candidate_training_authorized = false
+tpd_residual_off_candidate_authorized = false
+requires_new_tenth_mode = false
+```
+
+当前模型状态冻结为 `TPD8 + NER4 + QFG2`、`TSS OFF`。不授权 NER V5、
+QFG V3、TPD 公式修改、第十种固定权重组合模式或由本轮诊断触发的 fresh training。
+
+### 12.6 正式裁决与机器可读路径
+
+- NER decision Markdown：[`results/ner_stage2_mask_knockout_v1/comparison/best_miou_seed42/decision.md`](results/ner_stage2_mask_knockout_v1/comparison/best_miou_seed42/decision.md)
+- NER decision JSON：[`results/ner_stage2_mask_knockout_v1/comparison/best_miou_seed42/decision.json`](results/ner_stage2_mask_knockout_v1/comparison/best_miou_seed42/decision.json)
+- QFG decision Markdown：[`results/three_dataset_qfg_level_knockout_v1/comparison/best_miou_seed42/decision.md`](results/three_dataset_qfg_level_knockout_v1/comparison/best_miou_seed42/decision.md)
+- QFG decision JSON：[`results/three_dataset_qfg_level_knockout_v1/comparison/best_miou_seed42/decision.json`](results/three_dataset_qfg_level_knockout_v1/comparison/best_miou_seed42/decision.json)
+- TPD decision Markdown：[`results/three_dataset_tpd8_block_residual_knockout_v1/comparison/best_miou_seed42/decision.md`](results/three_dataset_tpd8_block_residual_knockout_v1/comparison/best_miou_seed42/decision.md)
+- TPD decision JSON：[`results/three_dataset_tpd8_block_residual_knockout_v1/comparison/best_miou_seed42/decision.json`](results/three_dataset_tpd8_block_residual_knockout_v1/comparison/best_miou_seed42/decision.json)
+- TPD 三数据集输入 evaluation：
+  [`NUAA`](results/three_dataset_tpd8_block_residual_knockout_v1/runs/NUAA-SIRST/v4_tss_off_best_miou_seed42/evaluation.json)、
+  [`NUDT`](results/three_dataset_tpd8_block_residual_knockout_v1/runs/NUDT-SIRST/v4_tss_off_best_miou_seed42/evaluation.json)、
+  [`IRSTD-1K`](results/three_dataset_tpd8_block_residual_knockout_v1/runs/IRSTD-1K/v4_tss_off_best_miou_seed42/evaluation.json)。
+
+## 13. 权威结果来源
 
 - 初代 TPD、V6、V7、NER、TSS、QFG 与工程认证摘要：[`README.md`](README.md)
 - 初代 TPD 研究裁决：[`TPD_SCTransNet_主线修订版.md`](TPD_SCTransNet_主线修订版.md)
