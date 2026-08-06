@@ -585,7 +585,248 @@ QFG V3、TPD 公式修改、第十种固定权重组合模式或由本轮诊断�
   [`NUDT`](results/three_dataset_tpd8_block_residual_knockout_v1/runs/NUDT-SIRST/v4_tss_off_best_miou_seed42/evaluation.json)、
   [`IRSTD-1K`](results/three_dataset_tpd8_block_residual_knockout_v1/runs/IRSTD-1K/v4_tss_off_best_miou_seed42/evaluation.json)。
 
-## 13. 权威结果来源
+## 13. GCSF 完整模型级跳连重分配诊断
+
+实验口径：seed 42，NUAA-SIRST、NUDT-SIRST、IRSTD-1K 各自 `img_idx/test`；
+使用当前完整 `TPD8 + NER4 + QFG2 + TSS-off` 的 `best_miou` 与 `best_pd`
+checkpoint。每份 checkpoint 计算当前 `(T+E)+E` 和 10 个 GCSF 可表示固定比例，
+共 `6 checkpoints × 11 modes = 66` 个单元。正式指标阈值为 0.5；阈值 1.0 仅记录
+`Pd=0, Fa=0` 的空预测端点，不参与裁决。
+
+### 13.1 当前模型六角色重放基准
+
+| 数据集 | checkpoint | Pd（数值） | tiny-Pd（数值） | Fa | mIoU | nIoU | unmatched | background FP |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | best_miou | 256/263（0.973384030） | 30/35（0.857142857） | 1.5435192156e-5 | 0.796482951 | 0.795348496 | 225 | 938 |
+| NUAA-SIRST | best_pd | 257/263（0.977186312） | 30/35（0.857142857） | 1.4749183616e-5 | 0.788553432 | 0.792667957 | 215 | 820 |
+| NUDT-SIRST | best_miou | 936/945（0.990476190） | 258/259（0.996138996） | 2.7805925852e-6 | 0.944406006 | 0.946423233 | 121 | 591 |
+| NUDT-SIRST | best_pd | 940/945（0.994708995） | 258/259（0.996138996） | 6.6642301628e-6 | 0.937380628 | 0.939836330 | 290 | 1005 |
+| IRSTD-1K | best_miou | 277/297（0.932659933） | 23/30（0.766666667） | 1.1728770697e-5 | 0.660311541 | 0.665661745 | 618 | 2093 |
+| IRSTD-1K | best_pd | 287/297（0.966329966） | 25/30（0.833333333） | 2.3248776868e-5 | 0.639986059 | 0.650812036 | 1225 | 2682 |
+
+六份 `current_g0` 全部通过既有正式 evaluation 的逐指标重放核验，说明此次反事实
+比较没有改变数据、checkpoint、推理图或指标定义。
+
+### 13.2 Trigger A 汇总
+
+| 固定 GCSF mode | `best_miou` safe-material | 六角色 severe | Trigger A |
+|---|---:|---:|:---:|
+| gneg025_l1_only | 0/3 | 0/6 | false |
+| gneg025_l2_only | 0/3 | 0/6 | false |
+| gneg025_l3_only | 0/3 | 2/6 | false |
+| gneg025_l4_only | 0/3 | 3/6 | false |
+| gneg025_all_levels | 0/3 | 6/6 | false |
+| gpos025_l1_only | 1/3 | 2/6 | false |
+| gpos025_l2_only | 0/3 | 1/6 | false |
+| gpos025_l3_only | 1/3 | 2/6 | false |
+| gpos025_l4_only | 2/3 | 1/6 | false |
+| gpos025_all_levels | 0/3 | 6/6 | false |
+
+Trigger A 要求同一非零 mode 在 `best_miou` 上至少 2/3 safe-material，并且六个
+数据集/角色单元 severe 为 0。没有 mode 同时满足两项。
+
+### 13.3 最接近通过的 `gpos025_l4_only` 绝对性能
+
+该模式只在 L4 使用 `g=+0.25`，即将 L4 从 `1.0T+2.0E` 改为
+`1.25T+1.75E`。其余尺度不变。
+
+| 数据集 | checkpoint | Pd（数值） | tiny-Pd（数值） | Fa | mIoU | nIoU | unmatched | background FP |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | best_miou | 255/263（0.969581749） | 30/35（0.857142857） | 1.4268977637e-5 | 0.794885570 | 0.794761351 | 208 | 919 |
+| NUAA-SIRST | best_pd | 256/263（0.973384030） | 30/35（0.857142857） | 1.3651569951e-5 | 0.786460601 | 0.791718658 | 199 | 800 |
+| NUDT-SIRST | best_miou | 935/945（0.989417989） | 258/259（0.996138996） | 1.9762889448e-6 | 0.944692796 | 0.946325635 | 86 | 542 |
+| NUDT-SIRST | best_pd | 939/945（0.993650794） | 258/259（0.996138996） | 5.7909862105e-6 | 0.939057320 | 0.941751046 | 252 | 942 |
+| IRSTD-1K | best_miou | 275/297（0.925925926） | 23/30（0.766666667） | 1.0476183535e-5 | 0.660594728 | 0.662382679 | 552 | 2045 |
+| IRSTD-1K | best_pd | 287/297（0.966329966） | 25/30（0.833333333） | 2.1388874718e-5 | 0.643207569 | 0.653143190 | 1127 | 2588 |
+
+相对当前模型，它在 NUAA/NUDT `best_miou` 上以各少检 1 个目标换取更低 FP，均
+达到冻结的 safe-material 门；但 IRSTD-1K `best_miou` 少检 2 个目标，触发唯一
+severe 单元。`best_pd` 三项均未 severe，仍不能抵消 primary veto。
+
+### 13.4 正式裁决
+
+```text
+decision = GCSF_BRANCH_AUDIT_NO_TRAINING_AUTHORIZATION
+gcsf_trigger_a_passed = false
+gcsf_pilot_authorized = false
+gcsf_formal_training_authorized = false
+skip_fusion_performance_bottleneck_established = false
+next_step = DEEP_SUPERVISION_GRADIENT_AUDIT
+```
+
+GCSF 的 480 参数训练/推理代码、导出器和 seed42 scratch runner 已实现并完成工程
+测试，但训练入口会重放六份输入和 decision；当前失败 decision 已被实际拒绝。因此
+没有产生 GCSF 训练 checkpoint，也不能报告训练后 GCSF 性能。当前正式完整模型仍为
+`TPD8 + NER4 + QFG2 + TSS-off`，主线和既有创新点不变。
+
+工程合同为 `480 parameters / 4 state keys / 0 buffers`；训练图为
+`10,870,708 parameters / 572 keys`，head-free 推理图为
+`10,870,610 parameters / 568 keys`。普通模式与 `python -O` 均通过
+`33 tests + 3389 subtests`，RTX 5090 训练态 forward/backward smoke 也已通过。
+
+- 正式裁决：[`decision.md`](results/three_dataset_gcsf_branch_audit_v1/comparison/seed42_six_role/decision.md)
+- 机器可读裁决：[`decision.json`](results/three_dataset_gcsf_branch_audit_v1/comparison/seed42_six_role/decision.json)
+- 六份输入：[`results/three_dataset_gcsf_branch_audit_v1/runs/`](results/three_dataset_gcsf_branch_audit_v1/runs/)
+
+## 14. 六头 Deep-Supervision 梯度审计
+
+在 GCSF 未获得训练授权后，继续检查当前完整模型的六个等权 BCE 监督头是否形成可
+跨数据集复现的梯度冲突。审计固定 seed 42，使用 NUAA-SIRST、NUDT-SIRST、
+IRSTD-1K 各自 `img_idx/train`，并同时覆盖当前 TSS-off 完整模型的 `best_miou` 与
+`best_pd` checkpoint。正式 manifest 共 512 个真实 crop、32 个唯一 batch；六份
+`audit.json` 全部通过输入重放、checkpoint、模型 state、RNG、sentinel 和参数分区
+核验。构建器、分析器和比较器的 38 项定向测试在普通 Python 与 `python -O` 下均
+通过，六份 raw Gram 的独立重算结果与正式 aggregate 完全一致。
+
+### 14.1 正式裁决
+
+```text
+decision=DS_GLOBAL_REWEIGHTING_BLOCKED_BY_DOMAIN_REVERSAL
+engineering_valid=true
+trigger_a_passed=false
+signature_count=60
+domain_reversal_signature_count=2
+authorized_signature_count=0
+ds_v2_design_authorized=false
+ds_v2_training_authorized=false
+tiny_gradient_conflict_supported=false
+gradient_scale_anomaly_observed=false
+```
+
+审计分层可用性为：tiny 与 normal 在三数据集均可用；background 只在 NUAA-SIRST
+和 IRSTD-1K 可用。NUDT-SIRST 的 663 张正式训练图像都含目标，因此其背景分层按
+合同记为结构上不可用，没有生成合成背景样本。
+
+### 14.2 决定性跨数据集反转
+
+| 分层 / 参数组 / 监督头 | NUDT-SIRST | NUAA-SIRST | IRSTD-1K |
+|---|---|---|---|
+| tiny / NER / gt3 | best-mIoU：cos=-0.151577，ratio=6.9744，PC+AC；best-Pd 转为 +0.089162 | 两角色约 +0.181/+0.182，无稳定冲突 | 两角色 +0.744454/+0.614671，均 PA |
+| normal / NER / gt2 | best-Pd：cos=-0.305888，ratio=1.0005，PC；best-mIoU 为 +0.086451 | 两角色 +0.329718/+0.605368，均 PA | 两角色 +0.971247/+0.940586，均 PA |
+
+这两组结果说明，局部冲突集中在 NUDT-SIRST 的 NER 梯度路径，而且随 checkpoint
+角色变化；同一梯度在 NUAA-SIRST 或 IRSTD-1K 上却是正向协同。六十个候选签名中
+没有一个同时满足跨数据集和双 checkpoint 授权门。因此不应统一降低六头权重，也不
+应启动全局 DS V2 训练。该结果不代表现有六头监督失败，只表示“全局统一重加权”不是
+当前可复用的性能优化方向。
+
+当前正式完整模型仍为 `TPD8 + NER4 + QFG2 + TSS-off`；TPD、NER、QFG 主线和创新点
+均未改变。本轮没有训练新模型，也没有产生新的性能 checkpoint。
+
+- 正式裁决：[`decision.md`](results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/decision.md)
+- 机器可读裁决：[`decision.json`](results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/decision.json)
+- 聚合结果：[`aggregate.json`](results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/aggregate.json)
+- 六份审计：[`results/three_dataset_ds_gradient_audit_v1/runs/`](results/three_dataset_ds_gradient_audit_v1/runs/)
+
+## 15. DORF V1 深监督输出复用筛选
+
+当前 Original 与 Final 都训练了多尺度融合 readout
+`d0=outconv(gt2,gt3,gt4,gt5,out)`，但历史正式推理只返回 `out`。DORF V1 在 raw
+logit 空间预注册 `α=0.25/0.50/0.75/1.0`，使用同一个 α 同时重放 Final TSS-off 与
+Original 的三数据集 best-mIoU/best-Pd，共 12 checkpoint、60 个工作点。固定阈值为
+0.5；没有重新选 checkpoint，也没有训练新权重。
+
+12 个 checkpoint、evaluation、summary/protocol、数据协议和背景 FP sidecar 均在
+首个输出前冻结 SHA。12/12 α=0 历史重放与工程核验通过；普通 Python 和
+`python -O` 的 32 项定向测试均通过，正式比较输出逐字节一致。
+
+### 15.1 Trigger A
+
+| mode | α | Final best-mIoU safe-material | Final 六角色 severe | Ma0/Maa 新 severe | 结果 |
+|---|---:|---:|---:|---:|:---:|
+| `dorf_a025` | 0.25 | 0/3 | 2/6 | 0/0 | FAIL |
+| `dorf_a050` | 0.50 | 0/3 | 4/6 | 2/0 | FAIL |
+| `dorf_a075` | 0.75 | 0/3 | 4/6 | 2/0 | FAIL |
+| `d0_only` | 1.00 | 0/3 | 5/6 | 3/0 | FAIL |
+
+`Ma0` 表示 `Final(α)` 对 `Original(0)`，`Maa` 表示 `Final(α)` 对
+`Original(α)`；数字为相对当前 Final(0)/Original(0) 新增的 severe 条件数。
+
+### 15.2 最小干预 `α=0.25` 的主角色
+
+| 数据集 | ΔPd 目标计数 | Δtiny | ΔmIoU | ΔnIoU | component FP reduction | background FP reduction | severe |
+|---|---:|---:|---:|---:|---:|---:|:---:|
+| NUAA-SIRST | -2 | 0 | -0.001219 | -0.004271 | -3.56% | +3.84% | YES |
+| NUDT-SIRST | -2 | -1 | +0.000021 | +0.000159 | +12.40% | +4.23% | YES |
+| IRSTD-1K | 0 | 0 | -0.000006 | -0.001034 | +0.49% | +0.72% | NO，但无 material gain |
+
+更大的 α 总体进一步降低 FP，但也增加目标漏检或 IoU 回退。例外是 NUDT-SIRST
+best-Pd：`α=0.50/0.75/1.0` 均保持 940/945 和 tiny 258/259，同时降低 component
+FP、略升 mIoU/nIoU；然而这一优势没有在主裁决 best-mIoU 重现，不能作为跨数据集
+统一输出。
+
+### 15.3 正式裁决
+
+```text
+decision=DORF_V1_ZERO_TRAINING_TRIGGER_FAILED
+selected_mode=null
+selected_alpha=null
+dorf_v1_production_implementation_authorized=false
+fresh_formal1000_launch_authorized_by_this_comparator=false
+model_mainline_changed=false
+training_loss_changed=false
+```
+
+因此不实现固定 α DORF 生产图，不启动 6 个 selector-aligned fresh formal1000。当前
+正式完整模型仍为 `TPD8 + NER4 + QFG2 + TSS-off`。DORF 表明 d0 更像保守的低 FP
+readout，直接全图平均无法同时保住 Pd 与区域质量；后续结构候选必须显式保护目标响应。
+
+- 正式裁决：[`decision.md`](results/three_dataset_dorf_v1/comparison/seed42_twelve_role/decision.md)
+- 机器可读裁决：[`decision.json`](results/three_dataset_dorf_v1/comparison/seed42_twelve_role/decision.json)
+- 12 份 evaluation：[`results/three_dataset_dorf_v1/runs/`](results/three_dataset_dorf_v1/runs/)
+- 冻结输入 manifest：[`dorf_v1_input_manifest.json`](results/three_dataset_dorf_v1/manifests/dorf_v1_input_manifest.json)
+
+## 16. NER-L4-TPR 目标保护重分配候选
+
+GCSF 的 `gpos025_l4_only` 在六角色中持续降低两类 FP，但合计比当前 Final 少检
+6 个目标；DORF 也重复出现低响应伴随 Pd/IoU 回退。NER-L4-TPR 因此不再全图统一
+调整，而是用现有五节点 NER 的 `q4` tail evidence 生成停止梯度的目标保护区，仅在
+非目标区域学习 L4 Transformer/Encoder 常系数和重分配。
+
+新增模块只有一个 `(1,256,1,1)` 零初始化参数，共 256 parameters / 1 state key /
+0 buffers。训练图为 `10,870,484 parameters / 569 keys`，head-free 推理图为
+`10,870,386 parameters / 565 keys`。当前 Final 权重零扩展后，六个 segmentation
+输出在 CPU 和 RTX 5090 上均逐位一致；RTX 5090 backward 中 256 个门参数全部获得
+有限非零梯度。严格导出 569→565 只删除四个 TSS 训练键。
+
+### 16.1 六角色固定 checkpoint 筛选
+
+三数据集 `best_miou` 与 `best_pd` 共六角色已完成固定阈值 0.5 筛选。联合比较同时
+使用当前 `g=0` 和无保护 `gpos025_l4_only` 两个参照：前者判断 FP/Fa 是否保留，
+后者判断被全局重分配压掉的目标是否恢复。没有用单一指标门或跨量纲加权和。
+
+```text
+assessment=REPRESENTABLE_CROSS_ROLE_JOINT_SIGNAL
+representable_cross_role_joint_mode=tpr_g01875
+finite_logit_pareto_modes=tpr_g00625,tpr_g0125,tpr_g01875
+```
+
+| 模式 | 目标恢复单元 | 两类 FP 下降单元 | 联合单元 | best-mIoU 联合 | best-Pd 联合 | ΣΔ目标 vs 无保护 | ΣΔcomponent FP vs 当前 | ΣΔbackground FP vs 当前 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `tpr_g00625` | 5/6 | 3/6 | 2/6 | 2/3 | 0/3 | +5 | -30 | -27 |
+| `tpr_g0125` | 5/6 | 3/6 | 2/6 | 2/3 | 0/3 | +5 | -64 | -64 |
+| `tpr_g01875` | 4/6 | 5/6 | 3/6 | 1/3 | 2/3 | +4 | -99 | -95 |
+| `tpr_g025`（边界） | 4/6 | 5/6 | 3/6 | 1/3 | 2/3 | +4 | -136 | -129 |
+
+`tpr_g01875` 相对无保护重分配恢复 4 个目标，同时相对当前模型合计降低 99 个
+component FP 像素和 95 个 background FP 像素；六角色 tiny 检出总数保持不变。
+但它相对当前模型仍合计少检 2 个目标，说明这是支持训练的架构信号，不是训练后最终
+性能结论。
+
+### 16.2 当前执行状态
+
+正式执行决定为 `authorize_formal_training`。GPU 1-epoch smoke 已通过，新门 256/256
+参数发生有限更新。NUAA-SIRST、NUDT-SIRST、IRSTD-1K 三套 seed42、scratch、
+1000-epoch、TSS-off 实验已分别在 GPU0/1/2 启动；epoch 10 起每 10 epochs 评估，
+独立保存 `best_miou` 和 `best_pd`。训练完成前，当前正式生产模型仍是
+`TPD8 + NER4 + QFG2 + TSS-off`。
+
+- 联合筛选：[`decision.md`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md)
+- 机器结果：[`decision.json`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.json)
+- 正式训练决定：[`execution_decision.json`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/execution_decision.json)
+- 正式训练目录：[`results/three_dataset_l4_tpr_tss_off_seed42_v1/`](results/three_dataset_l4_tpr_tss_off_seed42_v1/)
+
+## 17. 权威结果来源
 
 - 初代 TPD、V6、V7、NER、TSS、QFG 与工程认证摘要：[`README.md`](README.md)
 - 初代 TPD 研究裁决：[`TPD_SCTransNet_主线修订版.md`](TPD_SCTransNet_主线修订版.md)
@@ -603,6 +844,10 @@ QFG V3、TPD 公式修改、第十种固定权重组合模式或由本轮诊断�
 - EC-TSS V3.1 方案：[`SCTransNet_EC-TSS_V3性能提升与下一步方案.md`](SCTransNet_EC-TSS_V3性能提升与下一步方案.md)
 - EC-TSS V3.1 最终比较：[`results/three_dataset_ec_tss_v3_1_seed42/comparison/ec_tss_v3_1_final_comparison.md`](results/three_dataset_ec_tss_v3_1_seed42/comparison/ec_tss_v3_1_final_comparison.md)
 - 36 点联合像素 sidecar：[`results/three_dataset_ec_tss_v3_1_seed42/comparison/additive_joint_metrics_v1.md`](results/three_dataset_ec_tss_v3_1_seed42/comparison/additive_joint_metrics_v1.md)
+- GCSF 固定分支重分配裁决：[`results/three_dataset_gcsf_branch_audit_v1/comparison/seed42_six_role/decision.md`](results/three_dataset_gcsf_branch_audit_v1/comparison/seed42_six_role/decision.md)
+- DS-GA 六头梯度审计裁决：[`results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/decision.md`](results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/decision.md)
+- DORF V1 十二角色裁决：[`results/three_dataset_dorf_v1/comparison/seed42_twelve_role/decision.md`](results/three_dataset_dorf_v1/comparison/seed42_twelve_role/decision.md)
+- NER-L4-TPR 六角色筛选：[`results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md)
 
 本文件只汇总已经落盘的正式结果；后续模型完成后，应追加对应正式结果，不覆盖或
 改写历史表。
