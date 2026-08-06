@@ -1,0 +1,55 @@
+{
+  "deck_name": "SCTransNet_TSS3_QFG_科研答辩",
+  "language": "Chinese",
+  "goal": "面向课题组方案设计讨论，解释为什么在 SCTransNet baseline 上引入 TPD、NER、QFG 与 TSS，并呈现截止到三种正 TSS 强度的真实实验结果。",
+  "style": {
+    "name": "科研答辩风（适配用户参考PPT）",
+    "visual_direction": "正式中文科研答辩，白色或极浅灰背景，深学术蓝结构体系，少量正式红色强调，证据优先，高信息密度且阅读顺序清晰",
+    "color_palette": "深蓝#003F8F、研究蓝#0B5CAD、浅蓝#EAF2FF、正式红#B5121B；模型改动固定用橙色TPD/NER、紫色QFG、绿色虚线TSS",
+    "typography": "粗体中文无衬线标题，正文清晰紧凑，公式与英文缩写准确，关键结论用红色加粗",
+    "texture_and_finish": "平面科研信息图，细边框、轻阴影、明确箭头与结论条",
+    "deck_consistency": "以已批准slide_06为唯一视觉基准；统一配色、字体、线条、图例和结论条，但按页面角色变化布局"
+  },
+  "deck_context": {
+    "source_summary": "Baseline SCTransNet 通过四级编码、Patch Embedding、SCTB×4、Feature Mapping、CCA与多尺度监督完成红外小目标分割。当前方案在baseline上增加TPD V8-MPRS-DCH、NER V4 Tail-Aware、QFG2-CROA和训练期TSS-on。",
+    "core_claim": "四项改动分别约束下采样保真、浅层证据传递、Query频率抑噪与训练期目标存活，同时保持baseline语义主路可追溯。",
+    "canonical_terms": ["SCTransNet", "SCTB", "SSCA", "CFN", "TPD V8-MPRS-DCH", "NER V4 Tail-Aware", "QFG2-CROA", "TSS-on", "Mean IoU", "nIoU", "Pd", "Fa", "tiny-Pd"],
+    "scope_boundary": "模型设计截止TSS-on；实验只展示Original SCTransNet与Final完整模型三种正TSS参数λ=0.0025/0.005/0.01，不展示模型迭代、失败过程、TSS-off或后续设计。"
+  },
+  "sample_generation_method": {
+    "backend_used": "built-in image tool",
+    "tool_name": "image_gen",
+    "mode": "generate",
+    "model_config": "built-in default gpt-image-2 path; 1672x941 output",
+    "prompt_source": "approved slide 06 architecture prompt in conversation",
+    "size": "1672x941",
+    "quality": "high",
+    "approved_sample_path": "origin_image/slide_06.png",
+    "input_context_preparation": "parent inspected local reference images with view_image and passed them as referenced_image_paths",
+    "handoff_rule": "subagents must use built-in image_gen in generate mode and return blocker if unavailable"
+  },
+  "global_style_reference": {
+    "path": "origin_image/slide_06.png",
+    "role": "approved sample slide style reference only",
+    "fidelity": "match palette, typography mood, information density and diagram language; do not copy exact layout"
+  },
+  "slides": [
+    {"number":1,"title":"SCTransNet 目标保真与 TSS 设计","role":"cover","intent":"建立研究主题与四模块主线","key_points":["红外小目标分割","从浅层 token 保真、证据中继到 Query 频率调制与目标存活监督","组会方案设计讨论"],"layout":"左侧大标题和研究副标题，右侧放淡化的SCTransNet结构局部，底部四个模块标签","required_images":[{"path":"/home/ly/SCTransNet_main/Fig/picture2.png","role":"strict baseline architecture background","fidelity":"preserve architecture content"}],"constraints":["标题准确","不出现虚构机构或作者信息","无页码"]},
+    {"number":2,"title":"研究背景：红外小目标的三类困难","role":"problem framing","intent":"说明方案动机","key_points":["目标像素少，多次下采样后易丢失","局部高频杂波与目标相似，容易虚警","encoder–decoder语义鸿沟影响定位与边界恢复","Pd、Fa、Mean IoU、tiny-Pd存在权衡"],"layout":"左侧保留论文Fig.1，右侧三张挑战卡，底部研究问题结论条","required_images":[{"path":"/home/ly/SCTransNet_main/Fig/picture01.png","role":"strict SCTransNet paper Fig.1 evidence","fidelity":"preserve panels, labels and content"}],"constraints":["源图清晰可辨","不改源图标注"]},
+    {"number":3,"title":"Baseline：SCTransNet 整体架构与 SCTB","role":"architecture","intent":"完整解释baseline作为后续修改参照","key_points":["四级Encoder提取多尺度局部特征","Patch Embedding统一到16×16 token","SCTB由SSCA跨层交互与CFN互补增强组成","Feature Mapping、残差、CCA与Decoder逐级恢复","多尺度预测联合监督"],"layout":"上部完整baseline前向图，下部五步流程解读与一句结论","required_images":[{"path":"assets/baseline_reference/baseline_forward.png","role":"strict complete baseline forward diagram","fidelity":"preserve all modules, labels and arrows"}],"constraints":["baseline完整路径不可省略"]},
+    {"number":4,"title":"研究缺口：跨层交互之前，目标证据是否仍然存活","role":"causal concept","intent":"从baseline结构推导四项设计","key_points":["SCTB在token化之后才开始全层交互","弱目标可能在stride embedding中先被平均或抑制","attention无法恢复已经消失的证据","Query高频杂波可能干扰跨尺度相关性","需要保真、中继、抑噪与存活监督"],"layout":"从左到右因果链：弱目标→下采样→证据消失→跨层交互受限；下方四个设计响应","constraints":["突出科学问题而不是设计历史","不出现失败方案"]},
+    {"number":5,"title":"方案映射：在 Baseline 的什么位置改、为什么改","role":"comparison architecture","intent":"把问题、改动位置和目标一一对齐","key_points":["embeddings_1/2：证据损失→TPD","SCTB之前：浅层证据不可恢复→NER","SSCA Query：高频杂波干扰→QFG","训练监督：endpoint缺少存活约束→TSS","K/V、CFN、Decoder主体保持不变"],"layout":"左侧baseline完整图带四个编号定位，右侧四行问题→改动→解决目标，底部设计边界","required_images":[{"path":"assets/baseline_reference/baseline_full_model.png","role":"strict baseline model used for modification mapping","fidelity":"preserve baseline architecture and labels"}],"constraints":["只呈现最新方案","四处修改位置明确"]},
+    {"number":6,"title":"完整模型：SCTransNet + TPD + NER + QFG + TSS","role":"architecture","intent":"已批准样页","key_points":["蓝色baseline主路","橙色TPD/NER","紫色QFG","绿色虚线TSS训练期"],"approved_sample":true,"sample_approved":true},
+    {"number":7,"title":"TPD V8-MPRS-DCH：目标保真下采样","role":"module detail","intent":"解释下采样保真机制与接口","key_points":["只替换embeddings_1/2","Keep / Context / Saliency三源分解","MPRS四相位表示保留显著性总量","DCH延迟Context对Saliency学习轨迹的影响","endpoint进入SCTB，evidence供NER/TSS"],"layout":"左侧输入到三源分解，中部MPRS与DCH细节，右侧endpoint/evidence双输出，底部接口边界","constraints":["结构图必须显示数据流和两类输出","不出现其他TPD版本"]},
+    {"number":8,"title":"NER V4 Tail-Aware：五节点证据中继","role":"module detail","intent":"解释3+2节点如何形成三级relay并调制skip","key_points":["emb1暴露h11/h12/h13，emb2暴露h21/h22","五节点形成窄带证据源","按q4→q3→q2逐级中继","每级融合local evidence、parent relay与decoder upsample","三级gate只调制对应decoder skip，不连接q1"],"layout":"左侧五节点，中部三级relay级联，右侧三条decoder skip门控，尾部标Tail-Aware complement_tail","constraints":["明确3+2节点","明确不连接q1"]},
+    {"number":9,"title":"QFG2-CROA：Query-only 频率调制","role":"module detail","intent":"解释频率先验来源及只改Query的安全边界","key_points":["输入来自E1–E4","固定Haar 2×2提取high/low先验","频率源stop-gradient并通过有界gate","仅调制SSCA的Q1–Q4","K/V、CFN、Decoder保持不变"],"layout":"左侧四级特征与Haar分解，中部CROA有界门控，右侧嵌入baseline SSCA Q/K/V接口并突出Q-only","required_images":[{"path":"assets/baseline_reference/baseline_ssca_qkv.png","role":"strict baseline SSCA QKV structural reference","fidelity":"preserve Q/K/V relationship"}],"constraints":["必须有不改K/V的视觉边界"]},
+    {"number":10,"title":"TSS-on：双端点目标存活监督","role":"module detail","intent":"解释训练期辅助头、标签与部署裁剪","key_points":["读取emb1/emb2 stride-16 endpoint","两个独立1×1 Conv输出cell-presence logits","标签由GT经16×16 max-pooling得到","L_tss=L_emb1+L_emb2并与分割损失联合","部署时完全移除TSS heads"],"layout":"左侧双endpoint，中部双head与标签生成，右侧训练/部署对照，绿色虚线表示训练期","constraints":["训练图与推理图明确分开"]},
+    {"number":11,"title":"训练协议：动态 TSS 权重与 10% Ratio Cap","role":"formula process","intent":"说明三种TSS设计唯一变量与稳定约束","key_points":["L_seg=ΣBCE_k，六输出有序求和","L_tss=L_emb1+L_emb2","λ_eff=min(λ_req,0.10·stopgrad(L_seg)/max(stopgrad(L_tss),ε))","L_total=L_seg+λ_eff·L_tss","λ_req∈{0.0025,0.005,0.01}"],"layout":"左侧损失组成流程，中部大公式，右侧ratio cap示意与梯度边界，底部三配方","constraints":["公式必须准确清晰","不虚构数值曲线"]},
+    {"number":12,"title":"实验设置：Original + Final 三种 TSS 参数","role":"experiment design","intent":"定义最终模型三参数与统一对照口径","key_points":["Original：原始SCTransNet","Final结构固定：TPD V8 + NER V4 + QFG2-CROA + TSS-on","TSS参数：λ=0.0025 / 0.005 / 0.01","NUAA-SIRST、NUDT-SIRST、IRSTD-1K；seed42、formal1000、阈值0.5","分别报告best-Mean-IoU与best-Pd"],"layout":"左侧Original卡，右侧同一Final结构下三参数卡，底部数据集、指标与双checkpoint role","constraints":["不出现模型迭代或失败过程","不出现TSS-off及后续设计"]},
+    {"number":13,"title":"最终结果：NUAA-SIRST（Original + TSS三参数）","role":"data evidence","intent":"只展示Original与最终模型三参数结果","key_points":["best-mIoU Original: ep830, 0.786825/0.795096, Pd255/263, Fa2.6549e-5, tiny32/35；Final λ0.0025: ep770, 0.793272/0.785947, Pd252, Fa1.7013e-5, tiny30；λ0.005: ep680, 0.788944/0.792508, Pd251, Fa1.7150e-5, tiny29；λ0.01: ep680, 0.797386/0.791021, Pd253, Fa8.3693e-6, tiny30","best-Pd Original: ep440, 0.726236/0.748163, Pd260/263, Fa8.1018e-5, tiny34/35；Final λ0.0025: ep230, 0.746279/0.764466, Pd257, Fa5.7007e-5, tiny33；λ0.005: ep550, 0.778930/0.792287, Pd258, Fa3.2311e-5, tiny31；λ0.01: ep330, 0.784420/0.787630, Pd259, Fa2.4353e-5, tiny33"],"layout":"上下双role表，每表四行Original+三参数，突出每列最优，底部收益与代价结论","constraints":["所有数值逐字准确","不生成曲线","不出现其他模型"]},
+    {"number":14,"title":"最终结果：NUDT-SIRST（Original + TSS三参数）","role":"data evidence","intent":"只展示Original与最终模型三参数结果","key_points":["best-mIoU Original: ep520, 0.945607/0.947437, Pd935/945, Fa2.5048e-6, tiny258/259；Final λ0.0025: ep610, 0.946686/0.949784, Pd938, Fa4.2743e-6, tiny258；λ0.005: ep500, 0.944538/0.947775, Pd939, Fa5.6991e-6, tiny258；λ0.01: ep590, 0.942368/0.947814, Pd932, Fa4.5041e-6, tiny257","best-Pd Original: ep260, 0.915686/0.925523, Pd941/945, Fa1.3811e-5, tiny258/259；Final λ0.0025: ep630, 0.942560/0.946929, Pd939, Fa5.0786e-6, tiny258；λ0.005: ep540, 0.941290/0.945203, Pd940, Fa5.6761e-6, tiny258；λ0.01: ep300, 0.926336/0.933891, Pd938, Fa8.4567e-6, tiny258"],"layout":"上下双role表，每表四行Original+三参数，突出每列最优，底部结论","constraints":["所有数值逐字准确","不生成曲线"]},
+    {"number":15,"title":"最终结果：IRSTD-1K（Original + TSS三参数）","role":"data evidence","intent":"只展示Original与最终模型三参数结果","key_points":["best-mIoU Original: ep270, 0.673543/0.636875, Pd282/297, Fa2.2110e-5, tiny23/30；Final λ0.0025: ep280, 0.686740/0.653590, Pd270, Fa3.5243e-5, tiny22；λ0.005: ep180, 0.670987/0.650185, Pd283, Fa2.9796e-5, tiny22；λ0.01: ep180, 0.676715/0.630574, Pd277, Fa3.1485e-5, tiny22","best-Pd Original: ep230, 0.619141/0.627174, Pd287/297, Fa4.9193e-5, tiny24/30；Final λ0.0025: ep320, 0.613793/0.632749, Pd287, Fa5.9346e-5, tiny25；λ0.005: ep370, 0.658486/0.658560, Pd288, Fa2.8145e-5, tiny25；λ0.01: ep530, 0.627583/0.641612, Pd287, Fa2.8696e-5, tiny26"],"layout":"上下双role表，每表四行Original+三参数，突出每列最优，底部结论","constraints":["所有数值逐字准确","不生成曲线"]},
+    {"number":16,"title":"综合对比：Original 与 Final 三参数的收益边界","role":"comparison data","intent":"汇总三数据集最终结果而不呈现设计过程","key_points":["NUAA：λ0.01提升best-mIoU并显著降低Fa；Original保持更高Pd/tiny-Pd","NUDT：λ0.0025取得最高best-mIoU/nIoU；Original保持最低best-mIoU Fa与最高best-Pd Pd","IRSTD：λ0.0025提升best-mIoU；λ0.005在best-Pd下区域质量、Pd与Fa更均衡","三种λ不存在跨数据集统一全面最优","结论仅覆盖Original与最终结构三参数"],"layout":"三数据集×四配置对照矩阵，左右标收益/代价，底部保守结论","constraints":["不出现严重退化筛选计数或设计历史","不宣称全面领先"]},
+    {"number":17,"title":"总结：最终模型、三参数结果与结论边界","role":"summary","intent":"收束最终模型及Original对照","key_points":["最终模型：SCTransNet + TPD V8 + NER V4 + QFG2-CROA + TSS-on","三种TSS参数均在同一最终结构上评估","NUAA、NUDT、IRSTD呈现不同参数偏好","Final在多个mIoU、nIoU与Fa指标上具有竞争力","Original在部分Pd、tiny-Pd或Fa指标仍占优，不宣称全面领先"],"layout":"上部四模块最终结构链，下部Original与三参数结果结论、下一步讨论","constraints":["不出现失败过程、中间模型、TSS-off或后续设计"]}
+  ]
+}

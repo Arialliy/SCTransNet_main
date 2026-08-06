@@ -813,20 +813,171 @@ component FP 像素和 95 个 background FP 像素；六角色 tiny 检出总数
 但它相对当前模型仍合计少检 2 个目标，说明这是支持训练的架构信号，不是训练后最终
 性能结论。
 
-### 16.2 当前执行状态
+### 16.2 正式训练完成状态
 
 正式执行决定为 `authorize_formal_training`。GPU 1-epoch smoke 已通过，新门 256/256
 参数发生有限更新。NUAA-SIRST、NUDT-SIRST、IRSTD-1K 三套 seed42、scratch、
-1000-epoch、TSS-off 实验已分别在 GPU0/1/2 启动；epoch 10 起每 10 epochs 评估，
-独立保存 `best_miou` 和 `best_pd`。训练完成前，当前正式生产模型仍是
-`TPD8 + NER4 + QFG2 + TSS-off`。
+1000-epoch、TSS-off 实验均已完成；每套实验从 epoch 10 起每 10 epochs 评估，并且只
+保留各自的 `best_miou` 与 `best_pd` checkpoint。三份 `summary.json` 和六份正式权重
+均已落盘，训练进程正常结束，GPU 已释放。
+
+```text
+NUAA-SIRST=1000/1000 complete
+NUDT-SIRST=1000/1000 complete
+IRSTD-1K=1000/1000 complete
+seed=42
+threshold=0.5
+selection_split=img_idx/test
+test_selected=true
+selection_is_optimistic=true
+independent_test_confirmation=false
+```
+
+### 16.3 NER-L4-TPR 正式绝对性能
+
+下表中的 Pd 和 tiny-Pd 同时给出匹配计数与数值；Fa 为未匹配预测连通域像素除以
+有效像素数。`best_miou` 与 `best_pd` 是两个独立的选模角色，不能跨角色拼接指标。
+
+| 数据集 | 角色 | epoch | Pd（匹配/总数；值） | tiny-Pd（匹配/总数；值） | Fa ↓ | mIoU ↑ | nIoU ↑ |
+|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | best-mIoU | 710 | 256/263；0.973384 | 30/35；0.857143 | 1.447478e-5 | 0.797080 | 0.803596 |
+| NUAA-SIRST | best-Pd | 310 | 258/263；0.980989 | 32/35；0.914286 | 3.107619e-5 | 0.766000 | 0.782239 |
+| NUDT-SIRST | best-mIoU | 430 | 939/945；0.993651 | 258/259；0.996139 | 5.676086e-6 | 0.940423 | 0.944872 |
+| NUDT-SIRST | best-Pd | 460 | 940/945；0.994709 | 259/259；1.000000 | 8.387738e-6 | 0.938033 | 0.942877 |
+| IRSTD-1K | best-mIoU | 240 | 282/297；0.949495 | 23/30；0.766667 | 3.769149e-5 | 0.670300 | 0.658517 |
+| IRSTD-1K | best-Pd | 230 | 285/297；0.959596 | 22/30；0.733333 | 2.941682e-5 | 0.639739 | 0.647207 |
+
+像素分类质量与两类 FP 如下。component FP 是未匹配预测连通域中的像素数；
+background FP 是全部落在 GT 背景上的预测前景像素数。二者含义不同，不能互相替代。
+
+| 数据集 | 角色 | Precision ↑ | Recall ↑ | F1 ↑ | component FP px ↓ | background FP px ↓ | 未匹配预测目标 ↓ |
+|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | best-mIoU | 0.895818 | 0.878517 | 0.887083 | 211 | 857 | 22 |
+| NUAA-SIRST | best-Pd | 0.867445 | 0.867549 | 0.867497 | 453 | 1112 | 40 |
+| NUDT-SIRST | best-mIoU | 0.976488 | 0.962211 | 0.969297 | 247 | 656 | 29 |
+| NUDT-SIRST | best-Pd | 0.968402 | 0.967650 | 0.968026 | 365 | 894 | 34 |
+| IRSTD-1K | best-mIoU | 0.781376 | 0.825031 | 0.802610 | 1986 | 3355 | 97 |
+| IRSTD-1K | best-Pd | 0.770226 | 0.790629 | 0.780294 | 1550 | 3428 | 98 |
+
+### 16.4 相对优化前 TSS-off Final 的同角色差值
+
+比较严格使用各方法自己的同名 checkpoint：NER-L4-TPR `best_miou` 只对比原 Final
+`best_miou`，`best_pd` 只对比原 Final `best_pd`。正的 `ΔPd/Δtiny/ΔmIoU/ΔnIoU`
+表示 NER-L4-TPR 更高；负的 `ΔFa/Δcomponent FP/Δbackground FP` 表示虚警更少。
+
+| 数据集 | 角色 | ΔPd 目标数 | Δtiny | ΔFa | ΔmIoU | ΔnIoU | Δcomponent FP px | Δbackground FP px | 核心解释 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| NUAA-SIRST | best-mIoU | 0 | 0 | -9.604120e-7 | +0.000597 | +0.008248 | -14 | -81 | Pd 不变且 Fa、IoU、两类 FP 同向改善 |
+| NUAA-SIRST | best-Pd | +1 | +2 | +1.632700e-5 | -0.022553 | -0.010429 | +238 | +292 | 更高总 Pd/tiny-Pd 换取更差 Fa 与 IoU |
+| NUDT-SIRST | best-mIoU | +3 | 0 | +2.895493e-6 | -0.003983 | -0.001552 | +126 | +65 | 更高 Pd 换取轻微 IoU 与 Fa 回退 |
+| NUDT-SIRST | best-Pd | 0 | +1 | +1.723508e-6 | +0.000652 | +0.003041 | +75 | -111 | Pd 持平、tiny/IoU 改善，但两种 FP 方向不一致 |
+| IRSTD-1K | best-mIoU | +5 | 0 | +2.596272e-5 | +0.009989 | -0.007145 | +1368 | +1262 | 更高 Pd/mIoU，但虚警代价显著且 nIoU 回退 |
+| IRSTD-1K | best-Pd | -2 | -3 | +6.168043e-6 | -0.000247 | -0.003605 | +325 | +746 | Pd、tiny-Pd、Fa、IoU 核心指标均回退 |
+
+需要补充两点：NUAA best-mIoU 虽然核心检测/分割指标同向改善，但 pixel recall 比原
+Final 低 0.007034，因此在完整九维报告向量上仍属于不可比关系；IRSTD best-mIoU 的
+Pd 与 mIoU 提升也不能抵消显著增加的两类 FP。这里不使用单指标或加权和把权衡改写
+成“全面胜出”。
+
+### 16.5 三数据集联合正式裁决
+
+训练后比较器在 3 数据集 × 2 checkpoint 角色 × 9 个报告单元上进行无加权、逐单元
+比较。相对优化前 TSS-off Final，NER-L4-TPR 为 21 个单元更好、5 个相同、28 个更差；
+相对 Original 为 29 个更好、3 个相同、22 个更差。六个“数据集/角色”单元均为
+`incomparable`，因此最终分类为：
+
+```text
+status=complete
+classification=NER_L4_TPR_MIXED_TRADEOFF_REPORTED_VECTOR
+candidate_vs_current_final_tss_off=incomparable
+candidate_vs_original=incomparable
+global_production_replacement_authorized=false
+candidate_retained=true
+mainline_changed=false
+model_success_claim_made=false
+```
+
+这不是“模块完全失败”：NUAA best-mIoU 建立了 Pd 不变、Fa 更低且 mIoU/nIoU 更高的
+正向工作点；NUDT 和 IRSTD best-mIoU 也提高了目标检出数。但它没有形成三数据集、
+双 checkpoint 角色的一致提升，尤其 IRSTD best-Pd 明确回退。因此 NER-L4-TPR 可作为
+受数据域和工作区影响的有效候选保留，不能直接替换当前全局正式模型。当前生产基线
+仍保持 `TPD8 + NER4 + QFG2 + TSS-off`。
+
+### 16.6 正式产物
 
 - 联合筛选：[`decision.md`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md)
 - 机器结果：[`decision.json`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.json)
 - 正式训练决定：[`execution_decision.json`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/execution_decision.json)
 - 正式训练目录：[`results/three_dataset_l4_tpr_tss_off_seed42_v1/`](results/three_dataset_l4_tpr_tss_off_seed42_v1/)
+- NUAA-SIRST 正式摘要：[`summary.json`](results/three_dataset_l4_tpr_tss_off_seed42_v1/runs/NUAA-SIRST/final_tss_off_ner_l4_tpr_v1/seed_42/summary.json)
+- NUDT-SIRST 正式摘要：[`summary.json`](results/three_dataset_l4_tpr_tss_off_seed42_v1/runs/NUDT-SIRST/final_tss_off_ner_l4_tpr_v1/seed_42/summary.json)
+- IRSTD-1K 正式摘要：[`summary.json`](results/three_dataset_l4_tpr_tss_off_seed42_v1/runs/IRSTD-1K/final_tss_off_ner_l4_tpr_v1/seed_42/summary.json)
+- 训练后比较器：[`compare_three_dataset_ner_l4_tpr_posttraining_v1.py`](analysis/compare_three_dataset_ner_l4_tpr_posttraining_v1.py)
 
-## 17. 权威结果来源
+## 17. PBDR-V1 固定双读出零训练审计
+
+PBDR-V1 使用当前 TSS-off Final 的六个 checkpoint，在每张测试图的一次 forward 中捕获
+q4、out 与 d0，并比较 `g=0/0.125/0.25/0.5/0.75/1.0`。正式授权候选只有中间四个；
+`g=1` 是不可授权的 max/min oracle。六角色均使用 seed42、`img_idx/test`、阈值 0.5、
+统一 TF32-off FP32 设置。
+
+```text
+decision=PBDR_GLOBAL_FIXED_G_SCREEN_FAILED
+passing_authorization_gates=[]
+pbdr_implementation_authorized=false
+pbdr_training_authorized=false
+formal1000_started=false
+```
+
+| g | T1 通过数据集 | T2 severe | T3 | T4 | T5 | 总通过 |
+|---:|---:|:---:|:---:|:---:|:---:|:---:|
+| 0.125 | 0/3 | 0 | 否 | 否 | 是 | 否 |
+| 0.250 | 0/3 | 0 | 否 | 否 | 是 | 否 |
+| 0.500 | 1/3 | 1 | 否 | 否 | 是 | 否 |
+| 0.750 | 1/3 | 1 | 否 | 否 | 是 | 否 |
+
+三个 best-mIoU Current 锚点及最有利描述点如下。Pd 给出数值和匹配计数；Fa 使用
+unmatched component pixels / valid pixels。
+
+| 数据集 | 点 | Pd（匹配/总数；值） | Fa ↓ | mIoU ↑ | nIoU ↑ | component FP px ↓ | background FP px ↓ |
+|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | Current g=0 | 256/263；0.973384 | 1.543519e-5 | 0.796761 | 0.795636 | 225 | 936 |
+| NUAA-SIRST | g=0.125 | 256/263；0.973384 | 1.543519e-5 | 0.796596 | 0.794988 | 225 | 953 |
+| NUDT-SIRST | Current g=0 | 936/945；0.990476 | 2.780593e-6 | 0.944373 | 0.946329 | 121 | 592 |
+| NUDT-SIRST | g=0.75 | 936/945；0.990476 | 2.780593e-6 | 0.944728 | 0.946825 | 121 | 633 |
+| IRSTD-1K | Current g=0 | 277/297；0.932660 | 1.172877e-5 | 0.660251 | 0.665585 | 618 | 2093 |
+| IRSTD-1K | g=0.25 | 277/297；0.932660 | 1.174775e-5 | 0.660759 | 0.665998 | 619 | 2112 |
+
+固定 PBDR 没有在任何 best-mIoU 数据集增加 Pd。NUDT 的 IoU 改善没有降低 Fa；IRSTD
+的 IoU 改善伴随 Fa 上升；NUAA 从最小门控开始即降低 mIoU/nIoU。目标救援信号为
+NUAA/NUDT/IRSTD=`2/0/4` 个漏检目标，非保护区 FP 抑制信号为 `0/0/43` 个像素。
+因此硬保护图同时保护了 NUAA/NUDT 的误检，而双读出在 NUDT 漏检目标上没有更强 d0
+可用。PBDR-V1 固定公式关闭，不实现、不训练；但 `g=0.75` 在 NUDT 与 IRSTD 同时提高
+mIoU/nIoU，说明 PBDR 研究族保留正向重叠质量信号。后续应改为 q4 直接 residual 与
+可学习软保护，而不是继续调固定 g。
+
+这里不把“所有数据集、所有指标同时提升”作为论文模型必要条件。原
+SCTransNet Table I 也不是所有 Pd/Fa 都最优：NUAA Fa 13.92 高于 DNA-Net 8.78，
+NUDT Pd 98.62 低于 DNA-Net 98.83，IRSTD Pd 93.27 低于 UIU-Net 93.98。
+
+后续完整模型前瞻采用 M2F-SV 门：在三个 `best_miou` 上，检测族（Pd/Fa）
+至少获得 2/3 数据集的安全实质改善，重叠族（mIoU/nIoU）也至少获得 2/3，
+且至少一个数据集在同一 checkpoint 上同时支持两族；六个 `best_miou/best_pd`
+角色无 severe，且没有数据集被 Original 实质支配。安全/实质阈值复用已有冻结
+DORF 合同：检测实质改善为多检至少 2 个目标或 FP 下降至少 5%，重叠实质改善为
+mIoU/nIoU 任一提高至少 0.005。
+
+这是看过 PBDR-V1 结果后的协议修订，标记为 `post_hoc_protocol_amendment=true`，只适用于
+PBDR-V2 及之后的统一 scratch run，不追溯改判 PBDR-V1。PBDR-V1 在该门下仍不通过：
+检测族没有任何 `D+`，其 IoU 改善远小于 0.005，且高 g 存在 severe 角色；但这些
+定向信号足以支持继续设计 PBDR-V2。
+
+- 最终裁决：[`decision.md`](results/three_dataset_pbdr_zero_training_v1/comparison/seed42_six_role/decision.md)
+- 机器结果：[`decision.json`](results/three_dataset_pbdr_zero_training_v1/comparison/seed42_six_role/decision.json)
+- 冻结协议：[`PBDR_V1_PROTOCOL.md`](experiments/PBDR_V1_PROTOCOL.md)
+- 六角色结果：[`results/three_dataset_pbdr_zero_training_v1/runs/`](results/three_dataset_pbdr_zero_training_v1/runs/)
+
+## 18. 权威结果来源
 
 - 初代 TPD、V6、V7、NER、TSS、QFG 与工程认证摘要：[`README.md`](README.md)
 - 初代 TPD 研究裁决：[`TPD_SCTransNet_主线修订版.md`](TPD_SCTransNet_主线修订版.md)
@@ -848,6 +999,8 @@ component FP 像素和 95 个 background FP 像素；六角色 tiny 检出总数
 - DS-GA 六头梯度审计裁决：[`results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/decision.md`](results/three_dataset_ds_gradient_audit_v1/comparison/seed42_six_role/decision.md)
 - DORF V1 十二角色裁决：[`results/three_dataset_dorf_v1/comparison/seed42_twelve_role/decision.md`](results/three_dataset_dorf_v1/comparison/seed42_twelve_role/decision.md)
 - NER-L4-TPR 六角色筛选：[`results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md)
+- NER-L4-TPR 三数据集正式训练：[`results/three_dataset_l4_tpr_tss_off_seed42_v1/`](results/three_dataset_l4_tpr_tss_off_seed42_v1/)
+- NER-L4-TPR 训练后比较器：[`analysis/compare_three_dataset_ner_l4_tpr_posttraining_v1.py`](analysis/compare_three_dataset_ner_l4_tpr_posttraining_v1.py)
 
-本文件只汇总已经落盘的正式结果；后续模型完成后，应追加对应正式结果，不覆盖或
-改写历史表。
+本文件只汇总已经落盘并完成口径核对的正式结果；后续模型完成后，应追加对应结果，
+不覆盖或改写历史表。

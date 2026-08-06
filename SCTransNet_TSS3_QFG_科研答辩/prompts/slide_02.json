@@ -1,0 +1,43 @@
+{
+  "slide": 2,
+  "title": "研究背景：红外小目标的三类困难",
+  "prompt": "# Codex PPT Slide Image Prompt\n\n## Canvas\n{\n  \"type\": \"16:9 full-slide PowerPoint image\",\n  \"language\": \"Chinese\",\n  \"slide_number\": 2,\n  \"render_slide_number\": false\n}\n\n## Deck Goal\n面向课题组方案设计讨论，解释为什么在 SCTransNet baseline 上引入 TPD、NER、QFG 与 TSS，并呈现截止到三种正 TSS 强度的真实实验结果。\n\n## Required Background\n{\n  \"deck_context\": {\n    \"source_summary\": \"Baseline SCTransNet 通过四级编码、Patch Embedding、SCTB×4、Feature Mapping、CCA与多尺度监督完成红外小目标分割。当前方案在baseline上增加TPD V8-MPRS-DCH、NER V4 Tail-Aware、QFG2-CROA和训练期TSS-on。\",\n    \"core_claim\": \"四项改动分别约束下采样保真、浅层证据传递、Query频率抑噪与训练期目标存活，同时保持baseline语义主路可追溯。\",\n    \"canonical_terms\": [\n      \"SCTransNet\",\n      \"SCTB\",\n      \"SSCA\",\n      \"CFN\",\n      \"TPD V8-MPRS-DCH\",\n      \"NER V4 Tail-Aware\",\n      \"QFG2-CROA\",\n      \"TSS-on\",\n      \"Mean IoU\",\n      \"nIoU\",\n      \"Pd\",\n      \"Fa\",\n      \"tiny-Pd\"\n    ],\n    \"scope_boundary\": \"模型设计截止TSS-on；实验只展示Original SCTransNet与Final完整模型三种正TSS参数λ=0.0025/0.005/0.01，不展示模型迭代、失败过程、TSS-off或后续设计。\"\n  }\n}\n\n## Global Style\n{\n  \"name\": \"科研答辩风（适配用户参考PPT）\",\n  \"visual_direction\": \"正式中文科研答辩，白色或极浅灰背景，深学术蓝结构体系，少量正式红色强调，证据优先，高信息密度且阅读顺序清晰\",\n  \"color_palette\": \"深蓝#003F8F、研究蓝#0B5CAD、浅蓝#EAF2FF、正式红#B5121B；模型改动固定用橙色TPD/NER、紫色QFG、绿色虚线TSS\",\n  \"typography\": \"粗体中文无衬线标题，正文清晰紧凑，公式与英文缩写准确，关键结论用红色加粗\",\n  \"texture_and_finish\": \"平面科研信息图，细边框、轻阴影、明确箭头与结论条\",\n  \"deck_consistency\": \"以已批准slide_06为唯一视觉基准；统一配色、字体、线条、图例和结论条，但按页面角色变化布局\"\n}\n\n## Input Images\n\n- Image 1: /home/ly/SCTransNet_main/Fig/picture01.png — strict SCTransNet paper Fig.1 evidence; preserve panels, labels and content\n\n\n## Slide\n{\n  \"number\": 2,\n  \"title\": \"研究背景：红外小目标的三类困难\",\n  \"role\": \"problem framing\",\n  \"intent\": \"说明方案动机\"\n}\n\n## Text\n{\n  \"title\": \"研究背景：红外小目标的三类困难\",\n  \"key_points\": [\n    \"目标像素少，多次下采样后易丢失\",\n    \"局部高频杂波与目标相似，容易虚警\",\n    \"encoder–decoder语义鸿沟影响定位与边界恢复\",\n    \"Pd、Fa、Mean IoU、tiny-Pd存在权衡\"\n  ],\n  \"speaker_focus\": null\n}\n\n## Layout\n左侧保留论文Fig.1，右侧三张挑战卡，底部研究问题结论条\n\n## Constraints\n[\n  \"源图清晰可辨\",\n  \"不改源图标注\"\n]\n\n## Input Image Handling Rules\nFor any input image marked as a strict input asset, include it visibly and preserve its content. Do not redraw, replace, relabel, or invent a similar figure. Scale and crop only as needed for composition while keeping the important labels, arrows, data, and relationships recognizable.\n\n## Universal Constraints\n- The final image itself must contain the title and key points.\n- Render Chinese text exactly and legibly; avoid garbled characters.\n- Keep the confirmed deck style consistent while varying layout by slide role.\n- No watermark, unrelated logo, or extra slide number.\n",
+  "out": "slide_02.png",
+  "input_images": [
+    {
+      "path": "/home/ly/SCTransNet_main/Fig/picture01.png",
+      "role": "strict SCTransNet paper Fig.1 evidence",
+      "fidelity": "preserve panels, labels and content"
+    }
+  ],
+  "requires_context_images": true,
+  "expected_backend": "built-in image tool",
+  "sample_generation_method": {
+    "backend_used": "built-in image tool",
+    "tool_name": "image_gen",
+    "mode": "generate",
+    "model_config": "built-in default gpt-image-2 path; 1672x941 output",
+    "prompt_source": "approved slide 06 architecture prompt in conversation",
+    "size": "1672x941",
+    "quality": "high",
+    "approved_sample_path": "/home/ly/SCTransNet_main/SCTransNet_TSS3_QFG_科研答辩/origin_image/slide_06.png",
+    "input_context_preparation": "parent inspected local reference images with view_image and passed them as referenced_image_paths",
+    "handoff_rule": "subagents must use built-in image_gen in generate mode and return blocker if unavailable"
+  },
+  "generation_contract": {
+    "must_use_selected_image_backend": true,
+    "must_match_sample_generation_method": true,
+    "forbidden_final_image_methods": [
+      "local drawing/rendering scripts",
+      "Pillow-generated slides",
+      "SVG/HTML/CSS/canvas screenshots",
+      "python-pptx/PptxGenJS/native PPT layout screenshots",
+      "manually composited text/image overlays"
+    ],
+    "must_return": [
+      "backend_used",
+      "selected_source",
+      "qa_note"
+    ]
+  }
+}
