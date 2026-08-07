@@ -1,6 +1,6 @@
 # SCTransNet 历史模型实验结果总汇
 
-更新时间：2026-08-05
+更新时间：2026-08-07
 
 ## 1. 汇总结论
 
@@ -27,6 +27,17 @@
 8. NER→QFG→TPD 的三数据集固定权重组件诊断已闭环：NER stage 2 启动门
    未通过，QFG 和 TPD 均为“存在功能影响但没有跨数据集实质改善”。因此当前
    保持 `TPD8 + NER4 + QFG2`、`TSS OFF`，不启动 NER V5、QFG/TPD 公式修改或新的重训。
+9. PBDR-V2 在 NUAA-SIRST 失败后停止向 NUDT-SIRST、IRSTD-1K 扩展。PBDR-V3
+   Stage-1 已完成三数据集同角色 Original 对比：NUDT 两角色均保留 Original；
+   IRSTD-1K 的 `best_miou` 保留 Original、`best_pd` 采用 PBDR-V3；NUAA 的指标级
+   结果为 `best_miou` 候选胜、`best_pd` Original 胜，但因历史 Original 缺少完全
+   匹配的双 TF32-off 精度证明，只能作为 advisory，不能绑定替换。
+10. PBDR-V4 已完成 NUAA-SIRST、NUDT-SIRST、IRSTD-1K 的五族联合正式评估。
+    六个角色的胜者计数为 Original 4、Current 2，V3-calibrated、V4-Stage1、
+    V4-Stage2 均为 0。V4 两阶段只在 NUAA `best_miou` 相对 Original 严格提高
+    第一排序项 mIoU，但仍低于 Current，因此没有突破 Original/Current 既有包络。
+    本轮没有性能接受门槛；正式胜者属于 official-test 运营选择，必须按 optimistic
+    selection 解读。
 
 当前总裁决仍为：
 
@@ -36,6 +47,18 @@ ec_tss_v3_1_decision = EC_TSS_V3_1_PERFORMANCE_FAIL_STOP_TSS_OPTIMIZATION
 ner_stage2_decision = DO_NOT_AUTHORIZE_NER_V5_PER_DEVELOPMENT_TRAINING
 qfg_decision = QFG_INCONCLUSIVE_NO_FORMULA_CHANGE
 tpd_decision = TPD_INCONCLUSIVE_NO_FORMULA_CHANGE
+pbdr_v3_cross_dataset_status = complete
+pbdr_v3_nudt_selected = best_miou:original,best_pd:original
+pbdr_v3_irstd_selected = best_miou:original,best_pd:candidate
+pbdr_v3_nuaa_status = advisory_complete_binding_blocked
+pbdr_v4_cross_dataset_status = complete
+pbdr_v4_nuaa_selected = best_miou:current,best_pd:original
+pbdr_v4_nudt_selected = best_miou:original,best_pd:original
+pbdr_v4_irstd_selected = best_miou:original,best_pd:current
+pbdr_v4_family_wins = original:4,current:2,v3_calibrated:0,v4_stage1:0,v4_stage2:0
+pbdr_v4_envelope_breakthrough = false
+pbdr_v4_operational_test_selected = true
+pbdr_v4_selection_is_optimistic = true
 paper_core_established = false
 stability_claim_supported = false
 ```
@@ -977,7 +1000,7 @@ PBDR-V2 及之后的统一 scratch run，不追溯改判 PBDR-V1。PBDR-V1 在�
 - 冻结协议：[`PBDR_V1_PROTOCOL.md`](experiments/PBDR_V1_PROTOCOL.md)
 - 六角色结果：[`results/three_dataset_pbdr_zero_training_v1/runs/`](results/three_dataset_pbdr_zero_training_v1/runs/)
 
-## 18. PBDR-V2 自适应证据残差路由 formal1000（进行中）
+## 18. PBDR-V2 自适应证据残差路由 formal1000（NUAA 后停止扩展）
 
 PBDR-V2 在冻结的 `TPD8 + NER4 + QFG2-CROA + TSS-off` 主干上增加 19 个
 readout 参数。训练图为 573 state keys，推理图为 569 state keys。三个数据集使用
@@ -988,9 +1011,14 @@ seed42、各自 `img_idx`、1000 epochs、epoch 10 起每 10 epochs 评估、固
 
 ```text
 NUAA-SIRST=1000/1000 complete
-NUDT-SIRST=running on GPU0
-IRSTD-1K=queued for GPU2 after the existing baseline NUDT run
+NUDT-SIRST=not_launched
+IRSTD-1K=not_launched
+cross_dataset_extension=stopped_after_NUAA_failure
 ```
+
+这里覆盖 2026-08-05 曾记录的“NUDT 运行中、IRSTD 排队中”临时状态。后续失败分析
+明确要求不启动这两套 PBDR-V2 正式训练；实际跨数据集继续实验使用的是修正后的
+PBDR-V3，见第 19 节。
 
 ### 18.1 NUAA-SIRST 正式结果
 
@@ -1018,7 +1046,662 @@ PBDR-V2 配方在 NUAA 上的真实性能退化。
 - Current NUAA 摘要：[`summary.json`](results/three_dataset_tss_off_seed42_v1/runs/NUAA-SIRST/final_tss_off/seed_42/summary.json)
 - 冻结协议：[`PBDR_V2_PROTOCOL.md`](experiments/PBDR_V2_PROTOCOL.md)
 
-## 19. 权威结果来源
+## 19. PBDR-V3 保守双门校准器：三数据集 Stage-1 正式结果
+
+PBDR-V3 在 Current 主干之后增加有界的 rescue/suppression 双门校准器；Stage-1 只训练
+PBDR-V3 参数并冻结主干。正式比较严格使用同数据集、同角色 Original checkpoint，
+二值化固定为 `probability > 0.5`，未做阈值搜索。这里不设置正增益门槛：按冻结的
+角色优先序，在第一个不同项上只要严格更好即获胜。NUDT/IRSTD 的 epoch 不参与
+跨模型比较，六项指标完全相同则保留 Original。
+
+- `best_miou`：mIoU ↑ → Pd ↑ → Fa ↓ → nIoU ↑ → tiny-Pd ↑ → test loss ↓。
+- `best_pd`：Pd ↑ → Fa ↓ → tiny-Pd ↑ → mIoU ↑ → nIoU ↑ → test loss ↓。
+
+NUAA 的 post-hoc advisory 在上述六项之后还有 `earlier_epoch` 第七项；本次两个角色
+都在第一项即完成裁决，因此 epoch 没有影响实际胜者。
+
+NUDT-SIRST 和 IRSTD-1K 的 Original 均在同一 FP32、CUDA matmul TF32-off、cuDNN
+TF32-off 实现下重新评估；历史 Original checkpoint 本身仍是
+`test_selected=true`、`selection_is_optimistic=true`。NUAA 使用权威历史固定 0.5
+结果，但该历史产物没有明确证明两个 TF32 开关均关闭，所以只允许指标级 advisory。
+这项 NUAA 比较是 `post_hoc_not_preregistered`，发生在 official result 之后；adjudicator
+没有重新加载数据或模型、没有重访 official test，也没有覆盖此前的部署产物。
+
+### 19.1 角色裁决与 checkpoint
+
+| 数据集 | 角色 | Candidate epoch | Original epoch | 第一个决定项 | 指标胜者 | 绑定部署 |
+|---|---|---:|---:|---|---|---|
+| NUAA-SIRST | best_miou | 30 | 830 | mIoU `0.795395869 > 0.786824655` | **Candidate（advisory）** | 不绑定；沿用此前 Current-based 部署 |
+| NUAA-SIRST | best_pd | 25 | 440 | Pd `257/263 < 260/263` | **Original（advisory）** | 不绑定；沿用此前 Current-based 部署 |
+| NUDT-SIRST | best_miou | 95 | 520 | mIoU `0.944794189 < 0.945572339` | **Original** | **Original** |
+| NUDT-SIRST | best_pd | 90 | 260 | Pd `940/945 < 941/945` | **Original** | **Original** |
+| IRSTD-1K | best_miou | 15 | 270 | mIoU `0.662016336 < 0.673484761` | **Original** | **Original** |
+| IRSTD-1K | best_pd | 20 | 230 | Pd 同为 `287/297`；Fa `2.419770654e-5 < 4.919251399e-5` | **Candidate** | **PBDR-V3 Candidate** |
+
+因此四个具有绑定资格的 NUDT/IRSTD 角色中，PBDR-V3 只在 IRSTD-1K
+`best_pd` 获得部署胜利。NUDT `best_pd` 虽然 Candidate 的 mIoU、nIoU 和 Fa 更好，
+但 Pd 少检 1 个目标；Pd 是该角色的第一排序项，后续指标不能覆盖这一回退。
+
+### 19.2 全部核心检测、重叠与损失指标
+
+以下每格均为 `Candidate / Original（Candidate - Original）`。mIoU、nIoU、Pd、
+tiny-Pd 越高越好；Fa、test loss 越低越好。
+
+| 数据集 / 角色 | mIoU ↑ | nIoU ↑ | Pd ↑ | Fa ↓ | tiny-Pd ↑ | test loss ↓ |
+|---|---:|---:|---:|---:|---:|---:|
+| NUAA / best_miou | `0.795395869 / 0.786824655 (+0.008571214)` | `0.792876492 / 0.795095699 (-0.002219207)` | `0.973384030 / 0.969581749 (+0.003802281)` | `1.570959557e-5 / 2.654853051e-5 (-1.083893494e-5)` | `0.857142857 / 0.914285714 (-0.057142857)` | `4.751602795e-4 / 4.942663793e-4 (-1.910609977e-5)` |
+| NUAA / best_pd | `0.789941470 / 0.726235741 (+0.063705728)` | `0.793992233 / 0.748162904 (+0.045829329)` | `0.977186312 / 0.988593156 (-0.011406844)` | `1.474918362e-5 / 8.101760860e-5 (-6.626842499e-5)` | `0.857142857 / 0.971428571 (-0.114285714)` | `4.950236295e-4 / 5.762233480e-4 (-8.119971853e-5)` |
+| NUDT / best_miou | `0.944794189 / 0.945572339 (-0.000778150)` | `0.946810964 / 0.947406904 (-0.000595939)` | `0.990476190 / 0.989417989 (+0.001058201)` | `2.780592585e-6 / 2.504831337e-6 (+2.757612481e-7)` | `0.996138996 / 0.996138996 (0)` | `1.905135181e-4 / 2.382386971e-4 (-4.772517899e-5)` |
+| NUDT / best_pd | `0.937875478 / 0.915652026 (+0.022223451)` | `0.940364516 / 0.925479141 (+0.014885375)` | `0.994708995 / 0.995767196 (-0.001058201)` | `6.526349539e-6 / 1.381104251e-5 (-7.284692971e-6)` | `0.996138996 / 0.996138996 (0)` | `2.896802722e-4 / 1.944135359e-4 (+9.526673635e-5)` |
+| IRSTD / best_miou | `0.662016336 / 0.673484761 (-0.011468425)` | `0.668341492 / 0.636851511 (+0.031489981)` | `0.936026936 / 0.949494949 (-0.013468013)` | `1.210834256e-5 / 2.211006127e-5 (-1.000171870e-5)` | `0.766666667 / 0.766666667 (0)` | `7.207705747e-4 / 2.842100198e-4 (+4.365605550e-4)` |
+| IRSTD / best_pd | `0.641038931 / 0.619140625 (+0.021898306)` | `0.652740697 / 0.627173613 (+0.025567084)` | `0.966329966 / 0.966329966 (0)` | `2.419770654e-5 / 4.919251399e-5 (-2.499480746e-5)` | `0.833333333 / 0.800000000 (+0.033333333)` | `5.596538098e-4 / 4.431423889e-4 (+1.165114210e-4)` |
+
+### 19.3 全部像素分类指标
+
+以下每格为 `Candidate / Original`。
+
+| 数据集 / 角色 | Pixel Precision ↑ | Pixel Recall ↑ | Pixel F1 ↑ |
+|---|---:|---:|---:|
+| NUAA / best_miou | `0.890628764 / 0.899242142` | `0.881497377 / 0.862899380` | `0.886039545 / 0.880695991` |
+| NUAA / best_pd | `0.896874231 / 0.799420476` | `0.868860277 / 0.888054363` | `0.882645028 / 0.841409692` |
+| NUDT / best_miou | `0.978680712 / 0.980281589` | `0.964647713 / 0.963906057` | `0.971613546 / 0.972024859` |
+| NUDT / best_pd | `0.965526935 / 0.958463505` | `0.970369062 / 0.953487551` | `0.967941943 / 0.955969053` |
+| IRSTD / best_miou | `0.832196657 / 0.810134523` | `0.764001651 / 0.799711022` | `0.796642393 / 0.804889027` |
+| IRSTD / best_pd | `0.797292458 / 0.709924564` | `0.765859364 / 0.828815192` | `0.781259870 / 0.764776840` |
+
+### 19.4 全部目标计数、预测组件与样本规模
+
+以下成对值均为 `Candidate / Original`。NUAA 的历史 adjudication 额外保存了
+unmatched predicted pixels；NUDT/IRSTD 的本次 evaluation schema 未单列该字段，
+因此不由 Fa 反推并伪装成原始记录。
+
+| 数据集 / 角色 | Pd 命中/总数 | tiny 命中/总数 | 预测对象数 | 未匹配预测对象数 ↓ | 错误对象/图 ↓ | 未匹配预测像素 ↓ | 有效像素数 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA / best_miou | `256/263 / 255/263` | `30/35 / 32/35` | `278 / 282` | `22 / 27` | `0.102803738 / 0.126168224` | `229 / 387` | `14,577,078` |
+| NUAA / best_pd | `257/263 / 260/263` | `30/35 / 34/35` | `275 / 367` | `18 / 107` | `0.084112150 / 0.500000000` | `215 / 1,181` | `14,577,078` |
+| NUDT / best_miou | `936/945 / 935/945` | `258/259 / 258/259` | `961 / 958` | `25 / 23` | `0.037650602 / 0.034638554` | 未单列 | `43,515,904` |
+| NUDT / best_pd | `940/945 / 941/945` | `258/259 / 258/259` | `981 / 998` | `41 / 57` | `0.061746988 / 0.085843373` | 未单列 | `43,515,904` |
+| IRSTD / best_miou | `278/297 / 282/297` | `23/30 / 23/30` | `322 / 364` | `44 / 82` | `0.218905473 / 0.407960199` | 未单列 | `52,690,944` |
+| IRSTD / best_pd | `287/297 / 287/297` | `25/30 / 24/30` | `382 / 428` | `95 / 141` | `0.472636816 / 0.701492537` | 未单列 | `52,690,944` |
+
+测试样本规模分别为 NUAA-SIRST 214 图、NUDT-SIRST 664 图、IRSTD-1K 201 图；
+所有表项阈值均为 0.5。NUDT/IRSTD 的正式测试各只构造一次 loader、完整遍历一次，
+没有结果驱动重试、正增益门槛、阈值扫描或第二次 official-test pass。
+
+### 19.5 结果解释与口径限制
+
+- NUAA `best_miou` 的第一项 mIoU 严格提高，所以指标级判 Candidate；其 nIoU 和
+  tiny-Pd 仍回退。`best_pd` 的 Pd 少 3 个目标，因此由 Original 获胜，不能用后续
+  mIoU/Fa 改善覆盖第一排序项。
+- NUDT `best_miou` 的 Candidate 多检 1 个目标且 loss 更低，但 mIoU 首项略低；
+  `best_pd` 的 Candidate 大幅提高 mIoU/nIoU并降低 Fa，却少检 1 个目标。两角色均
+  按冻结角色顺序保留 Original。
+- IRSTD `best_miou` 的 Candidate 降低 Fa并提高 nIoU，但 mIoU 和 Pd 都回退；
+  `best_pd` 的 Pd 完全持平，Candidate 在第二项 Fa 上严格更低，同时 mIoU、nIoU、
+  tiny-Pd、Precision、F1 和错误对象数也更好，因此是唯一绑定采用的 PBDR-V3 点。
+- NUDT/IRSTD 的 Original 数值来自 PBDR-V3 裁决使用的匹配精度重评；NUAA Original
+  来自未重访 official test 的权威历史 fixed-0.5 产物。NUDT/IRSTD 同一 checkpoint
+  与第 8、9 节历史 summary 存在末位差异时，以本节裁决产物为准，不把差异解释成
+  模型本身发生变化。
+
+### 19.6 正式产物
+
+- 跨数据集最终报告：[`FINAL_RUN_REPORT.md`](results/two_dataset_pbdr_v3_stage1_v1/FINAL_RUN_REPORT.md)
+- NUDT-SIRST 正式 evaluation：[`evaluation.json`](results/two_dataset_pbdr_v3_stage1_v1/runs/NUDT-SIRST/formal/evaluation.json)
+- IRSTD-1K 正式 evaluation：[`evaluation.json`](results/two_dataset_pbdr_v3_stage1_v1/runs/IRSTD-1K/formal/evaluation.json)
+- NUAA-SIRST Original 零门槛 adjudication：[`original_zero_margin_role_adjudication_v1.json`](results/nuaa_pbdr_v3_stage1_v1/original_zero_margin_role_adjudication_v1.json)
+- 跨数据集冻结协议：[`PBDR_V3_CROSS_DATASET_PROTOCOL.md`](experiments/PBDR_V3_CROSS_DATASET_PROTOCOL.md)
+
+## 20. PBDR-V4 角色对齐组件校准器：三数据集五族零门槛正式结果
+
+PBDR-V4 将 Original、Current TSS-off、内部选择的 V3 residual recalibration、
+V4-Stage1 和 V4-Stage2 同时放入每个数据集/角色的冻结候选池。二值化工作点固定为
+<code>probability > 0.5</code>。这里没有性能接受门槛：
+<code>performance_acceptance_margin=null</code>，没有最小增益、百分比、epsilon、
+non-regression gate 或 materiality threshold。同角色从左到右找到第一个不同指标，
+只要严格更好即获胜；完整 role key 相同才按固定族序保留较早者：
+<code>Original > Current > V3-calibrated > V4-Stage1 > V4-Stage2</code>。
+
+- <code>best_miou</code>：mIoU ↑ → Pd ↑ → Fa ↓ → nIoU ↑ → tiny-Pd ↑ → loss ↓。
+- <code>best_pd</code>：Pd ↑ → Fa ↓ → tiny-Pd ↑ → mIoU ↑ → nIoU ↑ → loss ↓。
+
+需要明确披露：三份正式 bundle 均为 <code>operational_test_selected=true</code>、
+<code>selection_is_optimistic=true</code>。因此这些结果是冻结协议下从 official
+test 五族候选中产生的运营选择，不是独立未见测试集结果，也不能单独支持跨 seed
+泛化结论。
+
+### 20.1 内部选择与 official 前冻结
+
+Stage-1 训练 150 epochs、每 5 epochs 内部验证，只更新 <code>pbdr_v4.*</code>；
+Stage-2 从 Stage-1 冻结选中点出发训练 50 epochs，并以低学习率预定义解冻
+<code>outc.*</code> 与 <code>up_decoder1.*</code>。Stage-2 是固定并行候选，不由
+性能幅度门触发。12 份训练摘要均为 <code>complete</code>、
+<code>official_test_accessed=false</code>、
+<code>performance_acceptance_margin=null</code>。
+
+| 数据集 | 角色 | 阶段 | epoch | mIoU | nIoU | Pd | Fa | tiny-Pd | loss |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | best_miou | Stage1 | 105 | 0.913967611 | 0.906658408 | 60/60；1.000000000 | 0.000000000e+00 | 8/8；1.000000000 | 1.764814913e-04 |
+| NUAA-SIRST | best_miou | Stage2 | 35 | 0.916666667 | 0.909111530 | 60/60；1.000000000 | 0.000000000e+00 | 8/8；1.000000000 | 1.722234226e-04 |
+| NUAA-SIRST | best_pd | Stage1 | 10 | 0.902426944 | 0.895346397 | 60/60；1.000000000 | 0.000000000e+00 | 8/8；1.000000000 | 2.009988869e-04 |
+| NUAA-SIRST | best_pd | Stage2 | 30 | 0.899358658 | 0.891333933 | 60/60；1.000000000 | 0.000000000e+00 | 8/8；1.000000000 | 2.039926121e-04 |
+| NUDT-SIRST | best_miou | Stage1 | 5 | 0.986327811 | 0.987690929 | 189/189；1.000000000 | 0.000000000e+00 | 39/39；1.000000000 | 2.854784728e-05 |
+| NUDT-SIRST | best_miou | Stage2 | 5 | 0.986001609 | 0.987297722 | 189/189；1.000000000 | 0.000000000e+00 | 39/39；1.000000000 | 2.917018764e-05 |
+| NUDT-SIRST | best_pd | Stage1 | 150 | 0.992134831 | 0.990743043 | 189/189；1.000000000 | 0.000000000e+00 | 39/39；1.000000000 | 1.738168952e-05 |
+| NUDT-SIRST | best_pd | Stage2 | 35 | 0.993409420 | 0.992465045 | 189/189；1.000000000 | 0.000000000e+00 | 39/39；1.000000000 | 1.536360662e-05 |
+| IRSTD-1K | best_miou | Stage1 | 135 | 0.787212787 | 0.725200894 | 228/230；0.991304348 | 5.435943604e-06 | 25/26；0.961538462 | 1.700513025e-04 |
+| IRSTD-1K | best_miou | Stage2 | 50 | 0.786559293 | 0.725644235 | 228/230；0.991304348 | 5.602836609e-06 | 25/26；0.961538462 | 1.690291960e-04 |
+| IRSTD-1K | best_pd | Stage1 | 120 | 0.703865337 | 0.655232536 | 230/230；1.000000000 | 2.794265747e-05 | 26/26；1.000000000 | 2.738195856e-04 |
+| IRSTD-1K | best_pd | Stage2 | 10 | 0.707445475 | 0.657232916 | 230/230；1.000000000 | 2.670288086e-05 | 26/26；1.000000000 | 2.699564444e-04 |
+
+按冻结角色序比较 Stage1/Stage2，内部验证中 Stage2 在 NUAA <code>best_miou</code>、
+NUDT <code>best_pd</code>、IRSTD <code>best_pd</code> 更优，Stage1 在另外 3 个
+角色更优。正式集的 V4 内部比较只有 IRSTD <code>best_miou</code> 发生反转，由
+Stage2 超过 Stage1；但两个阶段最终均未赢得任何五族角色，内部选择信号没有转化为
+对既有基线包络的正式胜利。
+
+内部冻结的 V3 再标定配置与充分统计如下；六次 sweep 都只访问内部验证集，每次
+固定评估 378 个预定义配置，未访问 official test：
+
+| 数据集 | 角色 | positive scale | negative scale | bias | internal intersection/union | Pd | Fa pixels | tiny-Pd |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | best_miou | 0 | 0.25 | -0.1 | 1797/1968 | 60/60 | 0/2768375 | 8/8 |
+| NUAA-SIRST | best_pd | 0 | 1.5 | +0.15 | 1793/1967 | 60/60 | 0/2768375 | 8/8 |
+| NUDT-SIRST | best_miou | 3 | 1.5 | +0 | 6146/6221 | 189/189 | 0/8716288 | 39/39 |
+| NUDT-SIRST | best_pd | 4 | 0.25 | -0.15 | 6174/6218 | 189/189 | 1/8716288 | 39/39 |
+| IRSTD-1K | best_miou | 2 | 1.5 | +0 | 10838/13774 | 228/230 | 233/41943040 | 25/26 |
+| IRSTD-1K | best_pd | 0 | 0 | -0.15 | 10160/13964 | 229/230 | 730/41943040 | 25/26 |
+
+六个五族候选池均在 official pass 前冻结，候选数均为 5，
+<code>official_test_accessed=false</code>。冻结时发现 V3 选中项名称带
+<code>grid-NNN-</code> 前缀，而原 freezer 按无前缀名称比较。正式 amendment 只
+修正该字符串合同；calibration 数值、模型状态、split、metric、训练产物和
+evaluator 均未改变，并在 official test 访问前完成冻结。
+
+### 20.2 五族正式胜者
+
+| 数据集 | 角色 | 五族胜者 | 第一个决定项 |
+|---|---|---|---|
+| NUAA-SIRST | best_miou | **Current** | mIoU 0.796761047 为五族最高 |
+| NUAA-SIRST | best_pd | **Original** | Pd 260/263（0.988593156）为五族最高 |
+| NUDT-SIRST | best_miou | **Original** | mIoU 0.945572339 为五族最高 |
+| NUDT-SIRST | best_pd | **Original** | Pd 941/945（0.995767196）为五族最高 |
+| IRSTD-1K | best_miou | **Original** | mIoU 0.673484761 为五族最高 |
+| IRSTD-1K | best_pd | **Current** | Pd 与 Original 同为 287/297；Fa 2.326775546e-5 < 4.919251399e-5 |
+
+胜者计数为 <code>Original=4</code>、<code>Current=2</code>、
+<code>V3-calibrated=0</code>、<code>V4-Stage1=0</code>、
+<code>V4-Stage2=0</code>。本轮完整复现 Original/Current 两族包络；
+“未突破包络”不表示 V4 每个单项都更差，也不表示 V4 被两族在全部指标上
+Pareto 支配。
+
+### 20.3 全部 30 个正式点：核心检测、重叠与损失指标
+
+以下是三数据集 × 两角色 × 五族的全部绝对值；粗体族为该角色五族胜者。Fa 同时
+列出未匹配组件像素数、有效像素数与比率，不能与全部 pixel FP 混为同一口径。
+
+| 数据集 | 角色 | 族 | mIoU ↑ | nIoU ↑ | Pd ↑ | Fa ↓（unmatched/valid；值） | tiny-Pd ↑ | loss ↓ |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA | best_miou | Original | 0.786824655 | 0.795095699 | 255/263；0.969581749 | 387/14577078；2.654853051e-05 | 32/35；0.914285714 | 4.941946333e-04 |
+| NUAA | best_miou | **Current** | 0.796761047 | 0.795635585 | 256/263；0.973384030 | 225/14577078；1.543519216e-05 | 30/35；0.857142857 | 4.760764221e-04 |
+| NUAA | best_miou | V3-calibrated | 0.795266272 | 0.792624930 | 256/263；0.973384030 | 229/14577078；1.570959557e-05 | 30/35；0.857142857 | 4.754221070e-04 |
+| NUAA | best_miou | V4-Stage1 | 0.795042387 | 0.792385795 | 255/263；0.969581749 | 248/14577078；1.701301180e-05 | 30/35；0.857142857 | 4.827409685e-04 |
+| NUAA | best_miou | V4-Stage2 | 0.795185902 | 0.793067370 | 256/263；0.973384030 | 229/14577078；1.570959557e-05 | 30/35；0.857142857 | 4.855870506e-04 |
+| NUAA | best_pd | **Original** | 0.726164944 | 0.748136395 | 260/263；0.988593156 | 1182/14577078；8.108620946e-05 | 34/35；0.971428571 | 5.761868922e-04 |
+| NUAA | best_pd | Current | 0.788553432 | 0.792667957 | 257/263；0.977186312 | 215/14577078；1.474918362e-05 | 30/35；0.857142857 | 4.945913217e-04 |
+| NUAA | best_pd | V3-calibrated | 0.791017316 | 0.794048174 | 257/263；0.977186312 | 217/14577078；1.488638532e-05 | 30/35；0.857142857 | 4.932320414e-04 |
+| NUAA | best_pd | V4-Stage1 | 0.790514250 | 0.792715242 | 256/263；0.973384030 | 244/14577078；1.673860838e-05 | 30/35；0.857142857 | 5.081712216e-04 |
+| NUAA | best_pd | V4-Stage2 | 0.788894709 | 0.791059407 | 256/263；0.973384030 | 250/14577078；1.715021351e-05 | 30/35；0.857142857 | 5.137823374e-04 |
+| NUDT | best_miou | **Original** | 0.945572339 | 0.947406904 | 935/945；0.989417989 | 109/43515904；2.504831337e-06 | 258/259；0.996138996 | 2.307008644e-04 |
+| NUDT | best_miou | Current | 0.944373335 | 0.946329107 | 936/945；0.990476190 | 121/43515904；2.780592585e-06 | 258/259；0.996138996 | 1.726302978e-04 |
+| NUDT | best_miou | V3-calibrated | 0.945120265 | 0.947188327 | 936/945；0.990476190 | 125/43515904；2.872513001e-06 | 258/259；0.996138996 | 1.721731227e-04 |
+| NUDT | best_miou | V4-Stage1 | 0.944494491 | 0.946452136 | 936/945；0.990476190 | 120/43515904；2.757612481e-06 | 258/259；0.996138996 | 1.724867205e-04 |
+| NUDT | best_miou | V4-Stage2 | 0.943983619 | 0.945995019 | 935/945；0.989417989 | 119/43515904；2.734632377e-06 | 257/259；0.992277992 | 1.731157868e-04 |
+| NUDT | best_pd | **Original** | 0.915652026 | 0.925479141 | 941/945；0.995767196 | 601/43515904；1.381104251e-05 | 258/259；0.996138996 | 1.944075372e-04 |
+| NUDT | best_pd | Current | 0.937382763 | 0.939827569 | 940/945；0.994708995 | 291/43515904；6.687210267e-06 | 258/259；0.996138996 | 2.235516537e-04 |
+| NUDT | best_pd | V3-calibrated | 0.937745450 | 0.940372814 | 940/945；0.994708995 | 283/43515904；6.503369435e-06 | 258/259；0.996138996 | 2.228216258e-04 |
+| NUDT | best_pd | V4-Stage1 | 0.937261840 | 0.940064407 | 940/945；0.994708995 | 295/43515904；6.779130683e-06 | 258/259；0.996138996 | 2.391608610e-04 |
+| NUDT | best_pd | V4-Stage2 | 0.938474663 | 0.940902383 | 940/945；0.994708995 | 286/43515904；6.572309747e-06 | 258/259；0.996138996 | 2.352089295e-04 |
+| IRSTD | best_miou | **Original** | 0.673484761 | 0.636851511 | 282/297；0.949494949 | 1165/52690944；2.211006127e-05 | 23/30；0.766666667 | 2.842009839e-04 |
+| IRSTD | best_miou | Current | 0.660251398 | 0.665585204 | 277/297；0.932659933 | 618/52690944；1.172877070e-05 | 23/30；0.766666667 | 7.194182393e-04 |
+| IRSTD | best_miou | V3-calibrated | 0.662042503 | 0.667671699 | 278/297；0.936026936 | 674/52690944；1.279157193e-05 | 23/30；0.766666667 | 7.223466873e-04 |
+| IRSTD | best_miou | V4-Stage1 | 0.661479503 | 0.667361092 | 278/297；0.936026936 | 698/52690944；1.324705817e-05 | 23/30；0.766666667 | 7.222208308e-04 |
+| IRSTD | best_miou | V4-Stage2 | 0.663588314 | 0.670794150 | 277/297；0.932659933 | 695/52690944；1.319012239e-05 | 23/30；0.766666667 | 7.146023454e-04 |
+| IRSTD | best_pd | Original | 0.619140625 | 0.627173613 | 287/297；0.966329966 | 2592/52690944；4.919251399e-05 | 24/30；0.800000000 | 4.431502857e-04 |
+| IRSTD | best_pd | **Current** | 0.639832723 | 0.650690649 | 287/297；0.966329966 | 1226/52690944；2.326775546e-05 | 25/30；0.833333333 | 5.571619307e-04 |
+| IRSTD | best_pd | V3-calibrated | 0.637095826 | 0.647134645 | 286/297；0.962962963 | 1147/52690944；2.176844659e-05 | 25/30；0.833333333 | 5.584963549e-04 |
+| IRSTD | best_pd | V4-Stage1 | 0.623871201 | 0.631785562 | 286/297；0.962962963 | 2064/52690944；3.917181670e-05 | 25/30；0.833333333 | 5.970769833e-04 |
+| IRSTD | best_pd | V4-Stage2 | 0.625609377 | 0.631768912 | 286/297；0.962962963 | 1983/52690944；3.763455064e-05 | 25/30；0.833333333 | 5.914675829e-04 |
+
+本节 Original 数值来自本轮 publication bundle 的新 canonical matcher 与联合 pass；
+若与第 19 节历史裁决存在少量末位差异，以本节 bundle 为本轮五族比较的权威值。
+
+### 20.4 全部 24 个非 Original 点相对 Original 的核心差值
+
+所有差值均为“候选减 Original”。mIoU、nIoU、Pd、tiny-Pd 为正改善；Fa、loss
+为负改善。<code>角色序结果</code> 严格按冻结 role key 在第一个不同项裁决，
+不设置 epsilon 或任何正增益门槛。
+
+| 数据集 | 角色 | 族 | ΔmIoU | ΔnIoU | ΔPd（命中数；值） | ΔFa（像素；值） | Δtiny-Pd（命中数；值） | Δloss | 角色序结果 vs O |
+|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| NUAA | best_miou | Current | +0.009936392 | +0.000539886 | +1；+0.003802281 | -162；-1.111333835e-05 | -2；-0.057142857 | -1.811821117e-05 | **胜（mIoU）** |
+| NUAA | best_miou | V3-calibrated | +0.008441617 | -0.002470769 | +1；+0.003802281 | -158；-1.083893494e-05 | -2；-0.057142857 | -1.877252627e-05 | **胜（mIoU）** |
+| NUAA | best_miou | V4-Stage1 | +0.008217732 | -0.002709904 | +0；+0.000000000 | -139；-9.535518710e-06 | -2；-0.057142857 | -1.145366476e-05 | **胜（mIoU）** |
+| NUAA | best_miou | V4-Stage2 | +0.008361247 | -0.002028329 | +1；+0.003802281 | -158；-1.083893494e-05 | -2；-0.057142857 | -8.607582675e-06 | **胜（mIoU）** |
+| NUAA | best_pd | Current | +0.062388487 | +0.044531562 | -3；-0.011406844 | -967；-6.633702584e-05 | -4；-0.114285714 | -8.159557054e-05 | **负（Pd）** |
+| NUAA | best_pd | V3-calibrated | +0.064852372 | +0.045911779 | -3；-0.011406844 | -965；-6.619982413e-05 | -4；-0.114285714 | -8.295485084e-05 | **负（Pd）** |
+| NUAA | best_pd | V4-Stage1 | +0.064349305 | +0.044578847 | -4；-0.015209125 | -938；-6.434760108e-05 | -4；-0.114285714 | -6.801567061e-05 | **负（Pd）** |
+| NUAA | best_pd | V4-Stage2 | +0.062729765 | +0.042923012 | -4；-0.015209125 | -932；-6.393599595e-05 | -4；-0.114285714 | -6.240455486e-05 | **负（Pd）** |
+| NUDT | best_miou | Current | -0.001199004 | -0.001077797 | +1；+0.001058201 | +12；+2.757612481e-07 | +0；+0.000000000 | -5.807056660e-05 | **负（mIoU）** |
+| NUDT | best_miou | V3-calibrated | -0.000452074 | -0.000218577 | +1；+0.001058201 | +16；+3.676816642e-07 | +0；+0.000000000 | -5.852774176e-05 | **负（mIoU）** |
+| NUDT | best_miou | V4-Stage1 | -0.001077848 | -0.000954767 | +1；+0.001058201 | +11；+2.527811441e-07 | +0；+0.000000000 | -5.821414393e-05 | **负（mIoU）** |
+| NUDT | best_miou | V4-Stage2 | -0.001588721 | -0.001411884 | +0；+0.000000000 | +10；+2.298010401e-07 | -1；-0.003861004 | -5.758507763e-05 | **负（mIoU）** |
+| NUDT | best_pd | Current | +0.021730737 | +0.014348428 | -1；-0.001058201 | -310；-7.123832243e-06 | +0；+0.000000000 | +2.914411655e-05 | **负（Pd）** |
+| NUDT | best_pd | V3-calibrated | +0.022093423 | +0.014893673 | -1；-0.001058201 | -318；-7.307673075e-06 | +0；+0.000000000 | +2.841408868e-05 | **负（Pd）** |
+| NUDT | best_pd | V4-Stage1 | +0.021609814 | +0.014585267 | -1；-0.001058201 | -306；-7.031911827e-06 | +0；+0.000000000 | +4.475332381e-05 | **负（Pd）** |
+| NUDT | best_pd | V4-Stage2 | +0.022822637 | +0.015423242 | -1；-0.001058201 | -315；-7.238732763e-06 | +0；+0.000000000 | +4.080139232e-05 | **负（Pd）** |
+| IRSTD | best_miou | Current | -0.013233362 | +0.028733694 | -5；-0.016835017 | -547；-1.038129057e-05 | +0；+0.000000000 | +4.352172554e-04 | **负（mIoU）** |
+| IRSTD | best_miou | V3-calibrated | -0.011442258 | +0.030820188 | -4；-0.013468013 | -491；-9.318489340e-06 | +0；+0.000000000 | +4.381457034e-04 | **负（mIoU）** |
+| IRSTD | best_miou | V4-Stage1 | -0.012005258 | +0.030509581 | -4；-0.013468013 | -467；-8.863003100e-06 | +0；+0.000000000 | +4.380198469e-04 | **负（mIoU）** |
+| IRSTD | best_miou | V4-Stage2 | -0.009896447 | +0.033942639 | -5；-0.016835017 | -470；-8.919938880e-06 | +0；+0.000000000 | +4.304013615e-04 | **负（mIoU）** |
+| IRSTD | best_pd | Current | +0.020692098 | +0.023517036 | +0；+0.000000000 | -1366；-2.592475853e-05 | +1；+0.033333333 | +1.140116449e-04 | **胜（Fa）** |
+| IRSTD | best_pd | V3-calibrated | +0.017955201 | +0.019961032 | -1；-0.003367003 | -1445；-2.742406741e-05 | +1；+0.033333333 | +1.153460692e-04 | **负（Pd）** |
+| IRSTD | best_pd | V4-Stage1 | +0.004730576 | +0.004611949 | -1；-0.003367003 | -528；-1.002069729e-05 | +1；+0.033333333 | +1.539266975e-04 | **负（Pd）** |
+| IRSTD | best_pd | V4-Stage2 | +0.006468752 | +0.004595299 | -1；-0.003367003 | -609；-1.155796336e-05 | +1；+0.033333333 | +1.483172972e-04 | **负（Pd）** |
+
+V4 相对 Original 的角色序结果合计为 2 胜、10 负：仅 NUAA
+<code>best_miou</code> 的 Stage1、Stage2 首项 mIoU 严格更高；两者仍被 Current
+的更高 mIoU 覆盖。
+
+### 20.5 全部 30 个正式点：像素分类与目标/组件明细
+
+TP/FP/FN、Precision、Recall、F1、预测对象和未匹配对象均直接来自同一 bundle，
+不由舍入比率反推。<code>组件像素</code> 是未匹配预测组件中的像素数；Fa 正是
+该数除以 valid pixels，而不是全部 pixel FP 除以 valid pixels。
+
+| 数据集 | 角色 | 族 | Precision ↑ | Recall ↑ | F1 ↑ | TP/FP/FN | intersection/union | 预测/未匹配对象 ↓ | 错误对象/图 ↓ | 组件像素 ↓ | valid pixels | 样本 |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| NUAA | best_miou | Original | 0.899242142 | 0.862899380 | 0.880695991 | 7238/811/1150 | 7238/9199 | 282/27 | 0.126168224 | 387 | 14577078 | 214 |
+| NUAA | best_miou | **Current** | 0.888105200 | 0.885670005 | 0.886885931 | 7429/936/959 | 7429/9324 | 277/21 | 0.098130841 | 225 | 14577078 | 214 |
+| NUAA | best_miou | V3-calibrated | 0.890709724 | 0.881258941 | 0.885959130 | 7392/907/996 | 7392/9295 | 278/22 | 0.102803738 | 229 | 14577078 | 214 |
+| NUAA | best_miou | V4-Stage1 | 0.888369305 | 0.883285646 | 0.885820182 | 7409/931/979 | 7409/9319 | 280/25 | 0.116822430 | 248 | 14577078 | 214 |
+| NUAA | best_miou | V4-Stage2 | 0.889636932 | 0.882212685 | 0.885909254 | 7400/918/988 | 7400/9306 | 278/22 | 0.102803738 | 229 | 14577078 | 214 |
+| NUAA | best_pd | **Original** | 0.799334693 | 0.888054363 | 0.841362173 | 7449/1870/939 | 7449/10258 | 367/107 | 0.500000000 | 1182 | 14577078 | 214 |
+| NUAA | best_pd | Current | 0.898527410 | 0.865641392 | 0.881777886 | 7261/820/1127 | 7261/9208 | 275/18 | 0.084112150 | 215 | 14577078 | 214 |
+| NUAA | best_pd | V3-calibrated | 0.895601029 | 0.871363853 | 0.883316212 | 7309/852/1079 | 7309/9240 | 276/19 | 0.088785047 | 217 | 14577078 | 214 |
+| NUAA | best_pd | V4-Stage1 | 0.870224589 | 0.896161183 | 0.883002467 | 7517/1121/871 | 7517/9509 | 278/22 | 0.102803738 | 244 | 14577078 | 214 |
+| NUAA | best_pd | V4-Stage2 | 0.866812478 | 0.897711016 | 0.881991215 | 7530/1157/858 | 7530/9545 | 278/22 | 0.102803738 | 250 | 14577078 | 214 |
+| NUDT | best_miou | **Original** | 0.980281589 | 0.963906057 | 0.972024859 | 27293/549/1022 | 27293/28864 | 958/23 | 0.034638554 | 109 | 43515904 | 664 |
+| NUDT | best_miou | Current | 0.978774515 | 0.964117959 | 0.971390955 | 27299/592/1016 | 27299/28907 | 962/26 | 0.039156627 | 121 | 43515904 | 664 |
+| NUDT | best_miou | V3-calibrated | 0.977796847 | 0.965848490 | 0.971785943 | 27348/621/967 | 27348/28936 | 961/25 | 0.037650602 | 125 | 43515904 | 664 |
+| NUDT | best_miou | V4-Stage1 | 0.980328694 | 0.962740597 | 0.971455044 | 27260/547/1055 | 27260/28862 | 962/26 | 0.039156627 | 120 | 43515904 | 664 |
+| NUDT | best_miou | V4-Stage2 | 0.982019713 | 0.960586262 | 0.971184746 | 27199/498/1116 | 27199/28813 | 962/27 | 0.040662651 | 119 | 43515904 | 664 |
+| NUDT | best_pd | **Original** | 0.958463505 | 0.953487551 | 0.955969053 | 26998/1170/1317 | 26998/29485 | 998/57 | 0.085843373 | 601 | 43515904 | 664 |
+| NUDT | best_pd | Current | 0.964690604 | 0.970686915 | 0.967679470 | 27485/1006/830 | 27485/29321 | 980/40 | 0.060240964 | 291 | 43515904 | 664 |
+| NUDT | best_pd | V3-calibrated | 0.965949064 | 0.969803991 | 0.967872689 | 27460/968/855 | 27460/29283 | 981/41 | 0.061746988 | 283 | 43515904 | 664 |
+| NUDT | best_pd | V4-Stage1 | 0.962375546 | 0.972911884 | 0.967615033 | 27548/1077/767 | 27548/29392 | 983/43 | 0.064759036 | 295 | 43515904 | 664 |
+| NUDT | best_pd | V4-Stage2 | 0.965253404 | 0.971287304 | 0.968260954 | 27502/990/813 | 27502/29305 | 983/43 | 0.064759036 | 286 | 43515904 | 664 |
+| IRSTD | best_miou | **Original** | 0.810134523 | 0.799711022 | 0.804889027 | 11623/2724/2911 | 11623/17258 | 364/82 | 0.407960199 | 1165 | 52690944 | 201 |
+| IRSTD | best_miou | Current | 0.839874531 | 0.755332324 | 0.795363159 | 10978/2093/3556 | 10978/16627 | 321/44 | 0.218905473 | 618 | 52690944 | 201 |
+| IRSTD | best_miou | V3-calibrated | 0.823360987 | 0.771638916 | 0.796661339 | 11215/2406/3319 | 11215/16940 | 324/46 | 0.228855721 | 674 | 52690944 | 201 |
+| IRSTD | best_miou | V4-Stage1 | 0.809090909 | 0.783817256 | 0.796253582 | 11392/2688/3142 | 11392/17222 | 323/45 | 0.223880597 | 698 | 52690944 | 201 |
+| IRSTD | best_miou | V4-Stage2 | 0.809824213 | 0.786087794 | 0.797779485 | 11425/2683/3109 | 11425/17217 | 321/44 | 0.218905473 | 695 | 52690944 | 201 |
+| IRSTD | best_pd | Original | 0.709924564 | 0.828815192 | 0.764776840 | 12046/4922/2488 | 12046/19456 | 428/141 | 0.701492537 | 2592 | 52690944 | 201 |
+| IRSTD | best_pd | **Current** | 0.804146288 | 0.757946883 | 0.780363405 | 11016/2683/3518 | 11016/17217 | 380/93 | 0.462686567 | 1226 | 52690944 | 201 |
+| IRSTD | best_pd | V3-calibrated | 0.814016375 | 0.745630934 | 0.778324416 | 10837/2476/3697 | 10837/17010 | 377/91 | 0.452736318 | 1147 | 52690944 | 201 |
+| IRSTD | best_pd | V4-Stage1 | 0.713906112 | 0.831842576 | 0.768375226 | 12090/4845/2444 | 12090/19379 | 408/122 | 0.606965174 | 2064 | 52690944 | 201 |
+| IRSTD | best_pd | V4-Stage2 | 0.717565879 | 0.829984863 | 0.769692136 | 12063/4748/2471 | 12063/19282 | 405/119 | 0.592039801 | 1983 | 52690944 | 201 |
+
+### 20.6 全部 24 个非 Original 点相对 Original 的像素/目标差值
+
+以下仍是“候选减 Original”；Precision、Recall、F1、TP 为正通常更好，FP、FN、
+union、预测/未匹配对象和组件像素需结合任务角色与前表共同解释。
+
+| 数据集 | 角色 | 族 | ΔPrecision | ΔRecall | ΔF1 | ΔTP | ΔFP | ΔFN | Δunion | Δ预测对象 | Δ未匹配对象 | Δ错误对象/图 | Δ组件像素 |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| NUAA | best_miou | Current | -0.011136942 | +0.022770625 | +0.006189940 | +191 | +125 | -191 | +125 | -5 | -6 | -0.028037383 | -162 |
+| NUAA | best_miou | V3-calibrated | -0.008532418 | +0.018359561 | +0.005263139 | +154 | +96 | -154 | +96 | -4 | -5 | -0.023364486 | -158 |
+| NUAA | best_miou | V4-Stage1 | -0.010872837 | +0.020386266 | +0.005124191 | +171 | +120 | -171 | +120 | -2 | -2 | -0.009345794 | -139 |
+| NUAA | best_miou | V4-Stage2 | -0.009605210 | +0.019313305 | +0.005213263 | +162 | +107 | -162 | +107 | -4 | -5 | -0.023364486 | -158 |
+| NUAA | best_pd | Current | +0.099192717 | -0.022412971 | +0.040415713 | -188 | -1050 | +188 | -1050 | -92 | -89 | -0.415887850 | -967 |
+| NUAA | best_pd | V3-calibrated | +0.096266337 | -0.016690510 | +0.041954039 | -140 | -1018 | +140 | -1018 | -91 | -88 | -0.411214953 | -965 |
+| NUAA | best_pd | V4-Stage1 | +0.070889896 | +0.008106819 | +0.041640294 | +68 | -749 | -68 | -749 | -89 | -85 | -0.397196262 | -938 |
+| NUAA | best_pd | V4-Stage2 | +0.067477786 | +0.009656652 | +0.040629042 | +81 | -713 | -81 | -713 | -89 | -85 | -0.397196262 | -932 |
+| NUDT | best_miou | Current | -0.001507074 | +0.000211902 | -0.000633904 | +6 | +43 | -6 | +43 | +4 | +3 | +0.004518072 | +12 |
+| NUDT | best_miou | V3-calibrated | -0.002484742 | +0.001942433 | -0.000238916 | +55 | +72 | -55 | +72 | +3 | +2 | +0.003012048 | +16 |
+| NUDT | best_miou | V4-Stage1 | +0.000047105 | -0.001165460 | -0.000569815 | -33 | -2 | +33 | -2 | +4 | +3 | +0.004518072 | +11 |
+| NUDT | best_miou | V4-Stage2 | +0.001738124 | -0.003319795 | -0.000840113 | -94 | -51 | +94 | -51 | +4 | +4 | +0.006024096 | +10 |
+| NUDT | best_pd | Current | +0.006227099 | +0.017199364 | +0.011710418 | +487 | -164 | -487 | -164 | -18 | -17 | -0.025602410 | -310 |
+| NUDT | best_pd | V3-calibrated | +0.007485560 | +0.016316440 | +0.011903637 | +462 | -202 | -462 | -202 | -17 | -16 | -0.024096386 | -318 |
+| NUDT | best_pd | V4-Stage1 | +0.003912041 | +0.019424333 | +0.011645981 | +550 | -93 | -550 | -93 | -15 | -14 | -0.021084337 | -306 |
+| NUDT | best_pd | V4-Stage2 | +0.006789900 | +0.017799753 | +0.012291901 | +504 | -180 | -504 | -180 | -15 | -14 | -0.021084337 | -315 |
+| IRSTD | best_miou | Current | +0.029740009 | -0.044378698 | -0.009525869 | -645 | -631 | +645 | -631 | -43 | -38 | -0.189054726 | -547 |
+| IRSTD | best_miou | V3-calibrated | +0.013226464 | -0.028072107 | -0.008227688 | -408 | -318 | +408 | -318 | -40 | -36 | -0.179104478 | -491 |
+| IRSTD | best_miou | V4-Stage1 | -0.001043614 | -0.015893766 | -0.008635445 | -231 | -36 | +231 | -36 | -41 | -37 | -0.184079602 | -467 |
+| IRSTD | best_miou | V4-Stage2 | -0.000310310 | -0.013623228 | -0.007109543 | -198 | -41 | +198 | -41 | -43 | -38 | -0.189054726 | -470 |
+| IRSTD | best_pd | Current | +0.094221724 | -0.070868309 | +0.015586565 | -1030 | -2239 | +1030 | -2239 | -48 | -48 | -0.238805970 | -1366 |
+| IRSTD | best_pd | V3-calibrated | +0.104091811 | -0.083184258 | +0.013547576 | -1209 | -2446 | +1209 | -2446 | -51 | -50 | -0.248756219 | -1445 |
+| IRSTD | best_pd | V4-Stage1 | +0.003981548 | +0.003027384 | +0.003598387 | +44 | -77 | -44 | -77 | -20 | -19 | -0.094527363 | -528 |
+| IRSTD | best_pd | V4-Stage2 | +0.007641316 | +0.001169671 | +0.004915296 | +17 | -174 | -17 | -174 | -23 | -22 | -0.109452736 | -609 |
+
+### 20.7 结果解释与模型裁决
+
+- NUAA <code>best_miou</code> 中 V4 两阶段都相对 Original 提高首项 mIoU；但
+  Current 的 mIoU 为 0.796761047，仍高于 Stage1 的 0.795042387 和 Stage2 的
+  0.795185902。
+- NUAA <code>best_pd</code> 中 V4 的 mIoU、nIoU、Fa 和 loss 相对 Original
+  改善，但少检 4 个目标且 tiny target 少检 4 个；Pd 是第一排序项。
+- NUDT <code>best_miou</code> 中 Stage1 多检 1 个目标，但 mIoU 首项降低
+  0.001077848；Stage2 的 mIoU 更低且 tiny target 少检 1 个。
+- NUDT <code>best_pd</code> 中 Stage2 相对 Original 的 mIoU/nIoU 分别提高
+  0.022822637/0.015423242，Fa 降低 7.238732763e-6，但少检 1 个目标。
+- IRSTD <code>best_miou</code> 中 Stage2 的 nIoU 提高 0.033942639、Fa 更低，
+  但 mIoU 下降 0.009896447 且少检 5 个目标；<code>best_pd</code> 两阶段也都
+  少检 1 个总目标。
+- IRSTD <code>best_pd</code> 的 Current 与 Original 同为 287/297，第二项 Fa
+  从 4.919251399e-5 降至 2.326775546e-5，因此由 Current 获胜。
+
+结论不是“V4 没有局部作用”，而是局部收益伴随角色首要指标回退，或已被更强的
+Original/Current 工作点覆盖。按本轮冻结协议，不采用 V3-calibrated、V4-Stage1
+或 V4-Stage2 作为新的统一部署族。
+
+### 20.8 一次 official pass、完整性审计与边界
+
+NUAA、NUDT、IRSTD 的正式样本数分别为 214、664、201。每个数据集只构造并完整
+遍历一次 loader；同一遍历内联合评估两角色 × 五族共 10 个候选，forward 总数
+分别为 2,140、6,640、2,010，且每个候选的 forward 数严格等于样本数。三份
+bundle 均满足：
+
+~~~text
+loader_iteration_count=1
+official_probability_or_logit_cache_written=false
+official_sweep_performed=false
+performance_acceptance_margin=null
+operational_test_selected=true
+selection_is_optimistic=true
+~~~
+
+因此没有 official 概率/logit 缓存、阈值 sweep、结果驱动重试或第二次
+official-test pass。固定 <code>>0.5</code> 是指标测量工作点，不是性能提升门槛。
+
+独立只读审计共执行 2,599 项断言，结果为 PASS、0 anomaly：30/30 指标恒等式、
+135 个 source-lock 唯一文件和 30 个候选产物字节 SHA 均一致；审计未读取数据集
+test 索引，也未构造 loader。claim preflight digest 的格式与自哈希有效，但
+preflight body 未单独持久化，因此最终产物不能独立重算这一项 digest；这不影响
+bundle、候选池、source lock、split、metric 恒等式与一次 pass 证据。
+
+关键哈希如下：
+
+| 产物 | SHA-256 |
+|---|---|
+| source lock（semantic） | <code>96af51690eb9270f76a2a37cbb778ede45f57dcf6fb36e2eba357dfacdef8ba6</code> |
+| split projection（semantic） | <code>edf6fffb47f52693dbdd6c82209ff2b2259095b7aed5b91b28aab0e83112d1fb</code> |
+| freezer amendment（semantic） | <code>30582e4c6623b5d514c08b3f0afefad6e50a807f28521f7cfe620f9c147f54ec</code> |
+| NUAA-SIRST publication bundle | <code>a8bf36f7aa6d7df3de5132842a3e875d50cfb538acc46e32acbf803b462d8ea4</code> |
+| NUAA-SIRST claim | <code>4f4f1e15b5af693296eb24002e9eca0df6de234bf46d790b6f6e16b922561b23</code> |
+| NUAA-SIRST joint candidate pool | <code>686089b17789a6279401580bb521aaba7bcb686587a3cc13a1212ae21fe7ffdb</code> |
+| NUDT-SIRST publication bundle | <code>30b081d7c2e96a7c1dfe314daad1ec7516543dcbb7c4ea94c2699070f6bbedcc</code> |
+| NUDT-SIRST claim | <code>b9604cac598f6e4abfca2a71535310a84a27a1e49a35beba1a565c340172b1fd</code> |
+| NUDT-SIRST joint candidate pool | <code>cceeaf671040257333e598e4eeddf4d3711b2c24f4da00e0925afef75786b7d5</code> |
+| IRSTD-1K publication bundle | <code>96b705259db09276986236154238f0311a40878f56aeafb21a06f8b1d7c6a46f</code> |
+| IRSTD-1K claim | <code>301de205bbbdee75815f16ccecd0fbbbc6f1760e2ec64e7c66614e67e784678a</code> |
+| IRSTD-1K joint candidate pool | <code>597f4636483fe015771a1d60a7839f7b840f54b3c2cd7eabcddb9707a51323b7</code> |
+
+### 20.9 正式产物
+
+- V4 方案：[SCTransNet_PBDR零门槛失败分析与V4性能提升代码方案.md](SCTransNet_PBDR零门槛失败分析与V4性能提升代码方案.md)
+- 冻结协议：[PBDR_V4_PROTOCOL.md](experiments/PBDR_V4_PROTOCOL.md)
+- source lock：[source_lock.json](results/pbdr_v4_v1/protocol/source_lock.json)
+- split projection：[split_projection.json](results/pbdr_v4_v1/protocol/split_projection.json)
+- freezer amendment：[freeze_selected_grid_name_amendment_v1.json](results/pbdr_v4_v1/protocol/freeze_selected_grid_name_amendment_v1.json)
+- 六个候选池：[candidate_pools/](results/pbdr_v4_v1/candidate_pools/)
+- 六份 V3 内部校准：[v3_calibration/](results/pbdr_v4_v1/v3_calibration/)
+- 十二份 V4 训练摘要：[training/](results/pbdr_v4_v1/training/)
+- NUAA 正式 bundle：[publication_bundle.json](results/pbdr_v4_v1/official/NUAA-SIRST/publication_bundle.json)
+- NUDT 正式 bundle：[publication_bundle.json](results/pbdr_v4_v1/official/NUDT-SIRST/publication_bundle.json)
+- IRSTD 正式 bundle：[publication_bundle.json](results/pbdr_v4_v1/official/IRSTD-1K/publication_bundle.json)
+
+
+## 21. PBDR-V5 目标保持型组件约束：失败定位、三数据集内部训练与最终裁决
+
+本节记录 PBDR-V4 失败后的内部定位、较小 V5 目标保持型组件约束实现、三数据集
+30-epoch 正式内部训练、空闲 GPU 迁移、全部内部评估点和最终模型裁决。V5 全程
+只使用 development-train 与冻结 internal-validation；没有重新访问 official
+test、test index 或 official loader。固定概率工作点仍为严格 <code>&gt;0.5</code>，
+<code>performance_acceptance_margin=null</code>；这里的 0.5 是测量阈值，不是性能
+接受门槛，任何完整 role key 上的严格提升都可以胜出。
+
+### 21.1 用户给定的独立训练 Baseline 与可直接比较的完整模型
+
+用户给定的独立训练 Baseline 原始数值如下。除 Fa 外均为百分数；Fa 单位为
+<code>×10⁻⁶</code>。
+
+| 数据集 | 最佳 mIoU checkpoint | Epoch 1000 mIoU | nIoU | F1 | Pd | Fa |
+|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | **76.70** | 74.64 | 77.92 | 85.48 | 95.06 | 16.81 |
+| NUDT-SIRST | **93.99** | 93.13 | 93.85 | 96.44 | 98.84 | 6.83 |
+| IRSTD-1K | **67.74** | 66.65 | 66.82 | 79.97 | 93.27 | 11.60 |
+
+只有已经完成同口径 official best-mIoU 评估的 Current 完整模型
+（<code>TPD8 + NER4 + QFG2，TSS-off</code>）可以与上表直接相减。下表为
+<code>Baseline → Current（Current − Baseline）</code>：
+
+| 数据集 | mIoU (%) | nIoU (%) | F1 (%) | Pd (%) | Fa (×10⁻⁶) |
+|---|---:|---:|---:|---:|---:|
+| NUAA-SIRST | 76.7000 → 79.6761 (**+2.9761 pp**) | 77.9200 → 79.5636 (**+1.6436 pp**) | 85.4800 → 88.6886 (**+3.2086 pp**) | 95.0600 → 97.3384 (**+2.2784 pp**) | 16.8100 → 15.4352 (**−1.3748**) |
+| NUDT-SIRST | 93.9900 → 94.4373 (**+0.4473 pp**) | 93.8500 → 94.6329 (**+0.7829 pp**) | 96.4400 → 97.1391 (**+0.6991 pp**) | 98.8400 → 99.0476 (**+0.2076 pp**) | 6.8300 → 2.7806 (**−4.0494**) |
+| IRSTD-1K | 67.7400 → 66.0251 (**−1.7149 pp**) | 66.8200 → 66.5585 (**−0.2615 pp**) | 79.9700 → 79.5363 (**−0.4337 pp**) | 93.2700 → 93.2660 (**−0.0040 pp**) | 11.6000 → 11.7288 (**+0.1288**) |
+
+直接结论：
+
+- Current 完整模型在 NUAA-SIRST 与 NUDT-SIRST 相对独立 Baseline 成功；
+- Current 在 IRSTD-1K 仍落后独立 Baseline，主要差距为 mIoU −1.7149 pp；
+- V5 只有内部验证结果，禁止把 V5 内部数值与上表独立 Baseline 直接相减，也
+  不能把 V5 描述成新的 official 结果。
+
+因此，如果必须选择一个统一、完整、当前可部署的设计模型，仍选择
+<code>Current = TPD8 + NER4 + QFG2，TSS-off</code>；但它尚未解决 IRSTD-1K。
+
+### 21.2 内部失败定位
+
+development-train atlas 的组件监督分布如下：
+
+| 数据集/角色 | preserve 组件/像素 | rescue 组件/像素 | suppress 组件/像素 | 决定性问题 |
+|---|---:|---:|---:|---|
+| NUDT / best_pd | 729 / 23,144 | **0 / 0** | 11 / 32 | 训练与内部验证都没有漏检救援信号 |
+| NUAA / best_miou | 207 / 7,231 | 3 / 34 | 8 / 14 | 内部目标已全检出，主要是轮廓边界校准 |
+| IRSTD / best_miou | 949 / 48,170 | 16 / 148 | 83 / 882 | rescue 稀少且与 peak-only 目标错配，halo/附着 FP 主导 |
+
+具体定位如下：
+
+- NUDT internal Current 已为 189/189、tiny 39/39，仅有 1 个未匹配像素。
+  V4-Stage1 的 15 次上穿、0 次下穿把该像素通过新增像素并入匹配组件，暴露了
+  通过“桥接”绕过 Fa 的拓扑捷径。V4-Stage2 虽达 189/189、Fa=0，但没有自然
+  rescue 样本，不能从内部证据学会恢复 official 上相对 Original 少掉的目标。
+- NUAA internal Current 已为 60/60、tiny 8/8、Fa=0。V4-Stage2 相对 Current
+  的收益来自 TP +4、FP −10、FN −4 的边界像素变化；最弱目标峰值仍远高于
+  0-logit 决策边界，因此不是目标峰值保活问题。
+- IRSTD internal Current 为 228/230、tiny 25/26。两个漏检分别为
+  XDU641 component 2（area=3，Current peak=−1.19466）和 XDU202 component 1
+  （area=11，Current peak=−1.52051）。V4-Stage1 后仅到 −0.76039/−1.13811，
+  V4-Stage2 后为 −0.77564/−1.12914；best-mIoU router 的正残差上限 +0.6
+  在结构上不足以让它们越过 0。另有 atlas rescue 目标已经有正峰却因连通性/
+  质心匹配失败，说明 peak-only rescue 与 Pd matcher 存在错配。Stage1 相对
+  Current 虽 TP +442、FN −442，却 FP +484，新增 FP 主要是与真目标连通的
+  边缘/halo，而不是独立假目标。
+
+### 21.3 V5 设计、冻结训练协议与空闲 GPU 迁移
+
+V5 是一个较小的目标保持型微调臂：
+
+- 从不可变 V4-Stage1 selected checkpoint 初始化；
+- 仅训练 <code>pbdr_v4.* + outc.* + up_decoder1.*</code>，其余 Current
+  参数和 buffer 必须保持冻结；
+- 保留 V4 的 BCE、role-Tversky、rescue、suppress、neutral 与 L2-SP；
+- 用逐 preserve-component 的 frozen-Current smooth-peak 零 margin no-drop
+  约束替换绝对峰值抬升；
+- 对 Current 在各 preserve component 内的正支撑采用等组件、单侧 logit
+  no-drop；背景项采用“每样本 active background 概率增加”再等样本平均；
+- 30 epochs、每 5 epochs 内部评估、batch size 16、seed 42、FP32；
+- epoch 0 必须进入候选池作为 fail-safe；固定家族顺序为
+  Original → Current → V3-calibrated → V4-Stage1 → V4-Stage2 → V5，
+  完全同 role key 时保留更早家族。
+
+NUAA 在原绑定 GPU3 完整运行。NUDT/IRSTD 开始时分别与用户已有进程共享 GPU0/1；
+用户要求改用空闲 GPU 后，在完整 rolling checkpoint 处停下，并迁移至完全空闲的
+GPU2/GPU3。迁移只在独立 launcher 中改变硬件 allowlist，未改模型、loss、
+optimizer、数据、随机状态或选择规则：
+
+| 数据集 | 迁移源 epoch | 原 GPU UUID | 空闲 GPU UUID | 连续性 |
+|---|---:|---|---|---|
+| NUDT-SIRST | 15 | GPU-9ac47fe9-13d6-06e8-d0d6-6de812bc3c70 | GPU-4a0f4ab5-9d4e-20d9-4e7a-515e2d4e0562 | 源 4 条评估历史是目标 7 条历史的精确前缀 |
+| IRSTD-1K | 11 | GPU-3cc18a8a-e7fd-ee2f-c302-e778feabe640 | GPU-8d68eb9e-49d3-67f6-f715-6ef2ac4975c3 | 源 [0,5,10] 与目标前缀逐项一致 |
+
+两次迁移的 run identity、optimizer group signature 和 RNG rolling state 均连续；
+expected/observed GPU UUID 一致。定向测试最终为 **38/38 passed**，只出现第三方
+<code>thop</code> 的弃用警告。
+
+### 21.4 三角色六族全部内部选择结果
+
+下表仅为冻结 internal-validation。mIoU、nIoU、F1 均为百分数；Fa 单位为
+<code>×10⁻⁶</code>。V3 使用 sweep 的 selected candidate，而不是 anchor。
+
+| 数据集/角色 | 家族 | Epoch | mIoU | nIoU | F1 | Pd | tiny-Pd | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUDT / best_pd | Original | — | 94.426902 | 94.815836 | 97.133577 | 189/189 | 39/39 | 4.474382 |
+| NUDT / best_pd | Current | — | 99.260569 | 99.153471 | 99.628913 | 189/189 | 39/39 | 0.114728 |
+| NUDT / best_pd | V3-calibrated | — | 99.292377 | 99.190865 | 99.644932 | 189/189 | 39/39 | 0.114728 |
+| NUDT / best_pd | V4-Stage1 | 150 | 99.213483 | 99.074304 | 99.605189 | 189/189 | 39/39 | **0** |
+| NUDT / best_pd | **V4-Stage2** | **35** | **99.340942** | **99.246504** | **99.669382** | **189/189** | **39/39** | **0** |
+| NUDT / best_pd | V5 | 30 | 99.261163 | 99.146427 | 99.629212 | 189/189 | 39/39 | **0** |
+| NUAA / best_miou | Original | — | 90.060852 | 89.557872 | 94.770544 | 60/60 | 8/8 | 0 |
+| NUAA / best_miou | Current | — | 91.001011 | 89.984355 | 95.288512 | 60/60 | 8/8 | 0 |
+| NUAA / best_miou | V3-calibrated | — | 91.310976 | 90.521519 | 95.458167 | 60/60 | 8/8 | 0 |
+| NUAA / best_miou | V4-Stage1 | 105 | 91.396761 | 90.665841 | 95.505024 | 60/60 | 8/8 | 0 |
+| NUAA / best_miou | **V4-Stage2** | **35** | **91.666667** | **90.911153** | **95.652174** | **60/60** | **8/8** | **0** |
+| NUAA / best_miou | V5 | 10 | 91.430020 | 90.661203 | 95.523179 | 60/60 | 8/8 | 0 |
+| IRSTD / best_miou | Original | — | 67.816491 | 63.260352 | 80.822201 | 221/230 | 25/26 | 27.322769 |
+| IRSTD / best_miou | Current | — | 78.270510 | 71.933132 | 87.810945 | 228/230 | 25/26 | 5.531311 |
+| IRSTD / best_miou | V3-calibrated | — | 78.684478 | 72.464001 | 88.070860 | 228/230 | 25/26 | 5.555153 |
+| IRSTD / best_miou | **V4-Stage1** | **135** | **78.721279** | 72.520089 | **88.093907** | **228/230** | **25/26** | **5.435944** |
+| IRSTD / best_miou | V4-Stage2 | 50 | 78.655929 | **72.564424** | 88.052974 | 228/230 | 25/26 | 5.602837 |
+| IRSTD / best_miou | V5 | 0 | **78.721279** | 72.520089 | **88.093907** | **228/230** | **25/26** | **5.435944** |
+
+V3 selected 配置分别为：NUDT <code>pos=4, neg=0.25, bias=−0.15</code>，
+NUAA <code>pos=0, neg=0.25, bias=−0.10</code>，IRSTD
+<code>pos=2, neg=1.5, bias=0</code>。
+
+### 21.5 V5 全部 21 个内部评估点
+
+以下包括 epoch 0 与每 5 epoch 的全部结果。ΔmIoU 为相对同一 V5 run 的 epoch 0，
+单位为百分点；Fa 单位为 <code>×10⁻⁶</code>。
+
+| 数据集 | Epoch | mIoU (%) | ΔmIoU pp | nIoU (%) | F1 (%) | Pd | tiny-Pd | Fa | TP/FP/FN |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| NUDT | 0 | 99.213483 | 0 | 99.074304 | 99.605189 | 189/189 | 39/39 | 0 | 6181/37/12 |
+| NUDT | 5 | 99.229163 | +0.015680 | 99.095751 | 99.613090 | 189/189 | 39/39 | 0 | 6179/34/14 |
+| NUDT | 10 | 99.229163 | +0.015680 | 99.095751 | 99.613090 | 189/189 | 39/39 | 0 | 6179/34/14 |
+| NUDT | 15 | 99.197432 | −0.016051 | 99.069691 | 99.597099 | 189/189 | 39/39 | 0 | 6180/37/13 |
+| NUDT | 20 | 99.229163 | +0.015680 | 99.088490 | 99.613090 | 189/189 | 39/39 | 0 | 6179/34/14 |
+| NUDT | 25 | 99.261163 | +0.047680 | 99.139817 | 99.629212 | 189/189 | 39/39 | 0 | 6180/33/13 |
+| NUDT | **30** | **99.261163** | **+0.047680** | **99.146427** | **99.629212** | **189/189** | **39/39** | **0** | **6180/33/13** |
+| NUAA | 0 | 91.396761 | 0 | 90.665841 | 95.505024 | 60/60 | 8/8 | 0 | 1806/108/62 |
+| NUAA | 5 | 91.253792 | −0.142969 | 90.454492 | 95.426910 | 60/60 | 8/8 | 0 | 1805/110/63 |
+| NUAA | **10** | **91.430020** | **+0.033259** | **90.661203** | **95.523179** | **60/60** | **8/8** | **0** | **1803/104/65** |
+| NUAA | 15 | 91.299949 | −0.096812 | 90.458097 | 95.452142 | 60/60 | 8/8 | 0 | 1805/109/63 |
+| NUAA | 20 | 91.286727 | −0.110034 | 90.495839 | 95.444915 | 60/60 | 8/8 | 0 | 1802/106/66 |
+| NUAA | 25 | 91.374937 | −0.021825 | 90.733565 | 95.493107 | 60/60 | 8/8 | 0 | 1801/103/67 |
+| NUAA | 30 | 91.332995 | −0.063766 | 90.598357 | 95.470199 | 60/60 | 8/8 | 0 | 1802/105/66 |
+| IRSTD | **0** | **78.721279** | **0** | **72.520089** | **88.093907** | **228/230** | **25/26** | **5.435944** | **11032/1883/1099** |
+| IRSTD | 5 | 78.312743 | −0.408536 | 72.204649 | 87.837517 | 228/230 | 25/26 | 6.413460 | 11093/2034/1038 |
+| IRSTD | 10 | 78.378761 | −0.342518 | 72.248238 | 87.879028 | 228/230 | 25/26 | 6.127357 | 11071/1994/1060 |
+| IRSTD | 15 | 78.314956 | −0.406323 | 72.276085 | 87.838909 | 228/230 | 25/26 | 6.198883 | 11080/2017/1051 |
+| IRSTD | 20 | 78.439031 | −0.282247 | 72.339609 | 87.916899 | 228/230 | 25/26 | 5.745888 | 11045/1950/1086 |
+| IRSTD | 25 | 78.535927 | −0.185351 | 72.431265 | 87.977729 | 228/230 | 25/26 | 6.055832 | 11061/1953/1070 |
+| IRSTD | 30 | 78.364023 | −0.357256 | 72.263696 | 87.869764 | 228/230 | 25/26 | 6.222725 | 11065/1989/1066 |
+
+IRSTD 所有训练评估点的 Pd 均为 228/230、tiny-Pd 均为 25/26，没有救回任何
+新目标。最接近的 epoch 25 相对 epoch 0 虽 TP +29、FN −29，却 FP +70，mIoU
+仍下降 0.185351 pp；这再次确认瓶颈是边界/附着 halo FP，而不是目标保持失败。
+
+### 21.6 零门槛内部裁决与最优模型
+
+| 数据集/角色 | 既有五族包络 | V5 selected epoch | V5 相对包络 | 六族胜者 | V5 严格提升 |
+|---|---|---:|---|---|---|
+| NUDT / best_pd | V4-Stage2 | 30 | Pd/Fa/tiny-Pd 同；mIoU −0.079779 pp，nIoU −0.100078 pp，F1 −0.040170 pp | **V4-Stage2** | false |
+| NUAA / best_miou | V4-Stage2 | 10 | mIoU −0.236646 pp，nIoU −0.249950 pp，F1 −0.128995 pp；Pd/Fa/tiny-Pd 同 | **V4-Stage2** | false |
+| IRSTD / best_miou | V4-Stage1 | 0 | 全部指标与充分统计完全相同；冻结顺序保留更早家族 | **V4-Stage1** | false |
+
+最终结论：
+
+1. V5 在 **0/3** 个焦点角色上严格超过既有内部包络，停止采用 V5；
+2. NUDT 的内部完整 role-key 顺序为
+   V4-Stage2 > V5 > V4-Stage1 > V3-calibrated > Current > Original；
+3. NUAA 的六族胜者仍是 V4-Stage2；V5 只比自己的 V4-Stage1 初始化提高
+   0.033259 pp mIoU；
+4. IRSTD 的 V5 selected epoch=0，等价于安全回退到 V4-Stage1；
+5. V4-Stage2/V4-Stage1 是特定内部角色的最佳校准候选，不是已经证明可统一
+   替代 Current 的完整模型；
+6. 统一完整模型仍以 Current 为主；其 NUAA/NUDT 已胜独立 Baseline，IRSTD
+   仍需要专项优化；
+7. 已完成的一次 official 六角色联合评估中，Original 胜 4 个角色、Current
+   胜 2 个角色、V4 胜 0 个角色。因此 V4 是本节三个焦点内部角色的局部最优，
+   不是 official/统一部署最优。
+
+### 21.7 是否继续优化与下一步
+
+V5 本轮开发终止，不继续对相同结果做 epoch、权重或阈值 sweep。若继续，必须另立
+预注册的新协议（例如 V5.1），而不是根据 official 结果回调：
+
+- IRSTD：只在 rescue map 放宽正残差预算，或让 <code>outc/up_decoder1</code>
+  真正抬高低峰；增加组件核心定位/质心约束与邻接外圈抑制；加入 attached-boundary
+  FP/halo penalty，使 TP 增益不再被更多连通 FP 抵消；
+- NUDT：atlas 没有自然 rescue 样本。只有在新协议预注册受控 logit erosion/
+  peak-drop counterfactual hard-positive 臂时才继续，不能声称当前 V5 已学会救援；
+- NUAA：目标已全检出且 Fa=0，不再增加统一 peak boost；若继续只应研究可跨 split
+  外推的轻量 boundary-band 校准与对 Current 的蒸馏。
+
+### 21.8 完整性审计、哈希与产物
+
+三份 V5 summary、两份迁移 ledger 和统一 internal summary 的自哈希均已重放
+通过；NUAA、NUDT、IRSTD 的 selected candidate 都可由严格 builder 从 595-key
+训练状态导出并严格加载 591-key inference 状态。builder 元数据均为：
+
+~~~text
+dataset_loader_imported=false
+dataset_index_accessed=false
+official_test_data_accessed=false
+official_test_accessed=false
+performance_acceptance_margin=null
+~~~
+
+关键哈希：
+
+| 产物 | SHA-256 |
+|---|---|
+| V5 source manifest | <code>c80489a2bf1b707d4f9ac99bc2b729fbeccbe8a0578b6b972954e2fa9eaeca08</code> |
+| NUAA summary | <code>c4b06254fd1e5d243c6a80f6d570b1cebb219c525b4ad1a778aee045ebda5a14</code> |
+| NUDT summary | <code>d0ede7330e2d2ca533b6952df52597bd6a9902dcf7e93577de1814fa1f7bb5d2</code> |
+| IRSTD summary | <code>84f0814c923f683535d5f6dca50fb09394d39e68bb472cc13a222217d3eac581</code> |
+| NUDT GPU migration ledger | <code>5a3b68eb596aa02631dc026835f99162013ac47e59092428b718e4290494ea3a</code> |
+| IRSTD GPU migration ledger | <code>7b62084c385a33480f4acec50d59eb417534e6026ffb42d6c696a96dd8cd9b0b</code> |
+| unified internal summary | <code>de755ae9d73bc801d52d8fc69cf186c627bd4d5351a95650bfacf05d73009151</code> |
+
+正式内部产物：
+
+- 失败定位：[failure_localization_bundle.json](results/pbdr_v5_v1/diagnostics/failure_localization_bundle.json)
+- 冻结内部协议：[PBDR_V5_INTERNAL_PROTOCOL.md](experiments/PBDR_V5_INTERNAL_PROTOCOL.md)
+- V5 loss：[pbdr_v5_target_preservation_loss.py](experiments/pbdr_v5_target_preservation_loss.py)
+- V5 trainer：[train_three_dataset_pbdr_v5_v1.py](experiments/train_three_dataset_pbdr_v5_v1.py)
+- 空闲 GPU 迁移入口：[resume_pbdr_v5_on_idle_gpu.py](experiments/resume_pbdr_v5_on_idle_gpu.py)
+- NUAA summary：[summary.json](results/pbdr_v5_v1/training/NUAA-SIRST/best_miou/summary.json)
+- NUDT summary：[summary.json](results/pbdr_v5_v1/training_idle_gpu/NUDT-SIRST/best_pd/summary.json)
+- IRSTD summary：[summary.json](results/pbdr_v5_v1/training_idle_gpu/IRSTD-1K/best_miou/summary.json)
+- 统一机器可读汇总：[internal_summary.json](results/pbdr_v5_v1/comparison/internal_summary.json)
+- 统一人类可读汇总：[INTERNAL_SUMMARY.md](results/pbdr_v5_v1/comparison/INTERNAL_SUMMARY.md)
+
+
+## 22. 权威结果来源
 
 - 初代 TPD、V6、V7、NER、TSS、QFG 与工程认证摘要：[`README.md`](README.md)
 - 初代 TPD 研究裁决：[`TPD_SCTransNet_主线修订版.md`](TPD_SCTransNet_主线修订版.md)
@@ -1042,6 +1725,17 @@ PBDR-V2 配方在 NUAA 上的真实性能退化。
 - NER-L4-TPR 六角色筛选：[`results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md`](results/three_dataset_ner_l4_tpr_zero_training_v1/comparison/seed42_six_role/decision.md)
 - NER-L4-TPR 三数据集正式训练：[`results/three_dataset_l4_tpr_tss_off_seed42_v1/`](results/three_dataset_l4_tpr_tss_off_seed42_v1/)
 - NER-L4-TPR 训练后比较器：[`analysis/compare_three_dataset_ner_l4_tpr_posttraining_v1.py`](analysis/compare_three_dataset_ner_l4_tpr_posttraining_v1.py)
+- PBDR-V2 失败分析与 V3 方案：[`SCTransNet_PBDR_V2_failure_analysis_and_V3_plan.md`](SCTransNet_PBDR_V2_failure_analysis_and_V3_plan.md)
+- PBDR-V3 跨数据集最终报告：[`results/two_dataset_pbdr_v3_stage1_v1/FINAL_RUN_REPORT.md`](results/two_dataset_pbdr_v3_stage1_v1/FINAL_RUN_REPORT.md)
+- PBDR-V3 NUAA advisory 裁决：[`results/nuaa_pbdr_v3_stage1_v1/original_zero_margin_role_adjudication_v1.json`](results/nuaa_pbdr_v3_stage1_v1/original_zero_margin_role_adjudication_v1.json)
+- PBDR-V4 零门槛方案：[`SCTransNet_PBDR零门槛失败分析与V4性能提升代码方案.md`](SCTransNet_PBDR零门槛失败分析与V4性能提升代码方案.md)
+- PBDR-V4 冻结协议：[`experiments/PBDR_V4_PROTOCOL.md`](experiments/PBDR_V4_PROTOCOL.md)
+- PBDR-V4 official publication bundles：[`results/pbdr_v4_v1/official/`](results/pbdr_v4_v1/official/)
+- PBDR-V4 候选池与训练证据：[`results/pbdr_v4_v1/`](results/pbdr_v4_v1/)
+- PBDR-V5 内部冻结协议：[PBDR_V5_INTERNAL_PROTOCOL.md](experiments/PBDR_V5_INTERNAL_PROTOCOL.md)
+- PBDR-V5 失败定位：[failure_localization_bundle.json](results/pbdr_v5_v1/diagnostics/failure_localization_bundle.json)
+- PBDR-V5 六族内部汇总：[INTERNAL_SUMMARY.md](results/pbdr_v5_v1/comparison/INTERNAL_SUMMARY.md)
+- PBDR-V5 机器可读证据：[results/pbdr_v5_v1/](results/pbdr_v5_v1/)
 
 本文件只汇总已经落盘并完成口径核对的正式结果；后续模型完成后，应追加对应结果，
 不覆盖或改写历史表。
