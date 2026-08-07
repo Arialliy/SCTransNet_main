@@ -977,7 +977,48 @@ PBDR-V2 及之后的统一 scratch run，不追溯改判 PBDR-V1。PBDR-V1 在�
 - 冻结协议：[`PBDR_V1_PROTOCOL.md`](experiments/PBDR_V1_PROTOCOL.md)
 - 六角色结果：[`results/three_dataset_pbdr_zero_training_v1/runs/`](results/three_dataset_pbdr_zero_training_v1/runs/)
 
-## 18. 权威结果来源
+## 18. PBDR-V2 自适应证据残差路由 formal1000（进行中）
+
+PBDR-V2 在冻结的 `TPD8 + NER4 + QFG2-CROA + TSS-off` 主干上增加 19 个
+readout 参数。训练图为 573 state keys，推理图为 569 state keys。三个数据集使用
+seed42、各自 `img_idx`、1000 epochs、epoch 10 起每 10 epochs 评估、固定阈值 0.5，
+并分别保存自己的 `best_miou` 与 `best_pd`。
+
+当前执行状态：
+
+```text
+NUAA-SIRST=1000/1000 complete
+NUDT-SIRST=running on GPU0
+IRSTD-1K=queued for GPU2 after the existing baseline NUDT run
+```
+
+### 18.1 NUAA-SIRST 正式结果
+
+| 角色 | 模型 | epoch | Pd（匹配/总数；值） | tiny-Pd | Fa ↓ | mIoU ↑ | nIoU ↑ | 预测组件/误检组件 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| best-mIoU | PBDR-V2 | 550 | 254/263；0.9657794677 | 30/35；0.8571428571 | 2.4627706595e-5 | 0.7825994015 | 0.7934425659 | 289/35 |
+| best-mIoU | Current TSS-off | 850 | 256/263；0.9733840304 | 30/35；0.8571428571 | 1.5435192156e-5 | 0.7964829509 | 0.7953484960 | 277/21 |
+| best-mIoU | Original | 830 | 255/263；0.9695817490 | 32/35；0.9142857143 | 2.6548530508e-5 | 0.7868246549 | 0.7950956988 | 282/27 |
+| best-Pd | PBDR-V2 | 330 | 257/263；0.9771863118 | 32/35；0.9142857143 | 3.6221250926e-5 | 0.7694566814 | 0.7811902030 | 292/35 |
+| best-Pd | Current TSS-off | 820 | 257/263；0.9771863118 | 30/35；0.8571428571 | 1.4749183616e-5 | 0.7885534318 | 0.7926679569 | 275/18 |
+| best-Pd | Original | 440 | 260/263；0.9885931559 | 34/35；0.9714285714 | 8.1017608604e-5 | 0.7262357414 | 0.7481629044 | 367/107 |
+
+相对 Current，PBDR-V2 的 NUAA `best_miou` 少检 2 个目标，Fa 增加 59.56%，
+mIoU 下降 0.013884；`best_pd` 的总 Pd 持平、tiny-Pd 多 2 个，但 Fa 增加
+145.58%，mIoU/nIoU 分别下降 0.019097/0.011478。因此 NUAA 不是可接受的正向工作点，
+也不是由单个指标造成的轻微权衡。相对 Original 则仍是混合结果：PBDR-V2 的 Fa
+略低，但 Pd 与重叠质量较弱。
+
+正式产物审计已确认：1000 个 epoch 连续完整、100 个评估点完整；目录仅保留两份
+selected checkpoint；两份权重均为 573 keys，4 个 TSS state 精确为零，19 个 PBDR
+标量均已从零学习为非零。由此可排除“路由没有参与训练”这一解释，当前问题属于
+PBDR-V2 配方在 NUAA 上的真实性能退化。
+
+- PBDR-V2 NUAA 摘要：[`summary.json`](results/three_dataset_pbdr_v2_tss_off_seed42_v1/runs/NUAA-SIRST/pbdr_v2_tss_off/seed_42/summary.json)
+- Current NUAA 摘要：[`summary.json`](results/three_dataset_tss_off_seed42_v1/runs/NUAA-SIRST/final_tss_off/seed_42/summary.json)
+- 冻结协议：[`PBDR_V2_PROTOCOL.md`](experiments/PBDR_V2_PROTOCOL.md)
+
+## 19. 权威结果来源
 
 - 初代 TPD、V6、V7、NER、TSS、QFG 与工程认证摘要：[`README.md`](README.md)
 - 初代 TPD 研究裁决：[`TPD_SCTransNet_主线修订版.md`](TPD_SCTransNet_主线修订版.md)

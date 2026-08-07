@@ -1,0 +1,86 @@
+{
+  "schema": "sctransnet_two_dataset_pbdr_v3_current_manifest_seed42_v1/v1",
+  "authority": "completed_three_dataset_tss_off_seed42_v1_artifacts",
+  "allowed_datasets": [
+    "NUDT-SIRST",
+    "IRSTD-1K"
+  ],
+  "allowed_checkpoint_roles": [
+    "best_miou",
+    "best_pd"
+  ],
+  "historical_run_schema": "sctransnet_three_dataset_tss_off_seed42_v1/v1",
+  "root_relative": "results/three_dataset_tss_off_seed42_v1/runs",
+  "training_seed": 42,
+  "current_state_key_count": 568,
+  "historical_runtime_source_count": 35,
+  "datasets": {
+    "NUDT-SIRST": {
+      "summary": {
+        "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/NUDT-SIRST/final_tss_off/seed_42/summary.json",
+        "sha256": "ddd3013c7aefd22d15eefed1d97508fca9bedcb70710ceaa657bc4443ead6a3f",
+        "bytes": 3954
+      },
+      "protocol": {
+        "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/NUDT-SIRST/final_tss_off/seed_42/protocol.json",
+        "sha256": "b5fedbd78ae3845e04094c506ce6acf0781b6567e4bd41815df7ab51aa325b4f",
+        "bytes": 128829,
+        "canonical_sha256": "d2b0fffca4bd73a0c4133058287620ded3a839e5b1d90e7089bd06c3a2f3680e"
+      },
+      "checkpoints": {
+        "best_miou": {
+          "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/NUDT-SIRST/final_tss_off/seed_42/checkpoints/best_miou.pth.tar",
+          "sha256": "0f5f6a5fe96fa86302807d132078d575495a3aff6690967785868a23400f3e84",
+          "bytes": 43726377,
+          "epoch": 420,
+          "state_key_count": 568,
+          "state_sha256": "c10eebf67f3f25bd252881b61b5e3f9ad0a850dc594f79c451eb53325101e2da"
+        },
+        "best_pd": {
+          "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/NUDT-SIRST/final_tss_off/seed_42/checkpoints/best_pd.pth.tar",
+          "sha256": "227d8133ac7427200daae8b2ed0920d19517a2ac9dda6d1c7f15f14cbac06929",
+          "bytes": 43725229,
+          "epoch": 510,
+          "state_key_count": 568,
+          "state_sha256": "0d56ae2f268e29155b3beceed2bfb5541e100a93b6a5b769129501803c4745b4"
+        }
+      }
+    },
+    "IRSTD-1K": {
+      "summary": {
+        "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/IRSTD-1K/final_tss_off/seed_42/summary.json",
+        "sha256": "f85a49e05992f25dd37cd58247088c3cd7d63fef8b8b509dd85ef1f117f54d6e",
+        "bytes": 3936
+      },
+      "protocol": {
+        "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/IRSTD-1K/final_tss_off/seed_42/protocol.json",
+        "sha256": "6ebeb6f5ce1f777a15c79989808dd281d23ac49ec36b70ee2ebd1f93b6ebef48",
+        "bytes": 128821,
+        "canonical_sha256": "bfe6af45e2740c1e44b2ce996a1f74ab726c082aa18148536dcb26f45ea2dea1"
+      },
+      "checkpoints": {
+        "best_miou": {
+          "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/IRSTD-1K/final_tss_off/seed_42/checkpoints/best_miou.pth.tar",
+          "sha256": "e8e9401500502dda0bbdc9640b830a7934fb2bc97bde706fde9adca216d965b4",
+          "bytes": 43726377,
+          "epoch": 830,
+          "state_key_count": 568,
+          "state_sha256": "d7600f61ee3d0967dae899de72a28f2e7e9e4c6381f2687189e45d84dcb3e298"
+        },
+        "best_pd": {
+          "relative_path": "results/three_dataset_tss_off_seed42_v1/runs/IRSTD-1K/final_tss_off/seed_42/checkpoints/best_pd.pth.tar",
+          "sha256": "f667376d930a933c905d80a02938f85ba8323017e5715df30ef40e6ef93875a2",
+          "bytes": 43725229,
+          "epoch": 530,
+          "state_key_count": 568,
+          "state_sha256": "14abd9b707a443d7694c4e371cf7d85fb3c54e420bbaa0c64dbfe65529533314"
+        }
+      }
+    }
+  },
+  "scope_guards": {
+    "nuaa_registry_is_unchanged": true,
+    "official_test_data_must_not_be_opened": true,
+    "training_must_not_be_started_by_registry": true
+  }
+}

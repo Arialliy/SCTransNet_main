@@ -1,0 +1,100 @@
+{
+  "schema": "sctransnet_two_dataset_pbdr_v3_original_manifest_seed42_v1/v1",
+  "authority": "four_dataset_seed42_v1_selected_checkpoint_manifest",
+  "authority_manifest": {
+    "relative_path": "results/four_dataset_seed42_v1/selected_checkpoints/checkpoint_manifest.json",
+    "sha256": "f286c2f07113be079a2f447b3a2a4e868c81df58ac06cc4acda2de2210249799",
+    "bytes": 73520
+  },
+  "allowed_datasets": [
+    "NUDT-SIRST",
+    "IRSTD-1K"
+  ],
+  "allowed_checkpoint_roles": [
+    "best_miou",
+    "best_pd"
+  ],
+  "training_seed": 42,
+  "original_state_key_count": 510,
+  "datasets": {
+    "NUDT-SIRST": {
+      "protocol": {
+        "relative_path": "results/four_dataset_seed42_v1/runs/NUDT-SIRST/original/seed_42/protocol.json",
+        "sha256": "9d8e46a5972be340f13bd974b49e96bbabda4749432382f6a271e9d2737b169b"
+      },
+      "checkpoints": {
+        "best_miou": {
+          "frozen_relative_path": "results/four_dataset_seed42_v1/selected_checkpoints/NUDT-SIRST/original/best_miou.pth.tar",
+          "source_relative_path": "results/four_dataset_seed42_v1/runs/NUDT-SIRST/original/seed_42/checkpoints/best_miou.pth.tar",
+          "sha256": "4f9d5132a9b1a8c62cfd4ae5bf6c4b43258e513973916a12465884ffea728c5e",
+          "bytes": 45528975,
+          "epoch": 520,
+          "state_key_count": 510,
+          "state_sha256": "33d06a91515926379aae5440eae7cbd5742a0360694c4b0adaf5e59c93c08e82"
+        },
+        "best_pd": {
+          "frozen_relative_path": "results/four_dataset_seed42_v1/selected_checkpoints/NUDT-SIRST/original/best_pd.pth.tar",
+          "source_relative_path": "results/four_dataset_seed42_v1/runs/NUDT-SIRST/original/seed_42/checkpoints/best_pd.pth.tar",
+          "sha256": "0c4c2990c1e99b82832e3ebe1f5d7af009819a566156475aff083f9289a5ff81",
+          "bytes": 45527943,
+          "epoch": 260,
+          "state_key_count": 510,
+          "state_sha256": "bd12a5ef040bea5fd0c20ebd6b405f53499d8d84508e3c101d63806e94b03c0c"
+        }
+      }
+    },
+    "IRSTD-1K": {
+      "protocol": {
+        "relative_path": "results/four_dataset_seed42_v1/runs/IRSTD-1K/original/seed_42/protocol.json",
+        "sha256": "d5ecd0e40877b84e43df09d2ea19b2068b7ce54fb7d2951254f980ac379396c8"
+      },
+      "checkpoints": {
+        "best_miou": {
+          "frozen_relative_path": "results/four_dataset_seed42_v1/selected_checkpoints/IRSTD-1K/original/best_miou.pth.tar",
+          "source_relative_path": "results/four_dataset_seed42_v1/runs/IRSTD-1K/original/seed_42/checkpoints/best_miou.pth.tar",
+          "sha256": "b82795652ec3ee11d28cd5703f737615676793ed63f653e952989518e472b6ba",
+          "bytes": 45528975,
+          "epoch": 270,
+          "state_key_count": 510,
+          "state_sha256": "60113bc3c8baa02e44ea61e8ca63bfac25ee5554de4c9cf14776b3f84475ce47"
+        },
+        "best_pd": {
+          "frozen_relative_path": "results/four_dataset_seed42_v1/selected_checkpoints/IRSTD-1K/original/best_pd.pth.tar",
+          "source_relative_path": "results/four_dataset_seed42_v1/runs/IRSTD-1K/original/seed_42/checkpoints/best_pd.pth.tar",
+          "sha256": "09b3c399e6a4d0a75133a78204ea4e29864f7b108142b0e46d4e72e92429478a",
+          "bytes": 45527943,
+          "epoch": 230,
+          "state_key_count": 510,
+          "state_sha256": "e08da4d1674850136bcc083d48dfcfa4580e0561567232c3ea818e77b0a46da4"
+        }
+      }
+    }
+  },
+  "selection_policy": {
+    "threshold": 0.5,
+    "best_miou_order": [
+      "higher_miou",
+      "higher_pd",
+      "lower_fa",
+      "higher_niou",
+      "higher_tiny_pd",
+      "lower_test_loss",
+      "earlier_epoch"
+    ],
+    "best_pd_order": [
+      "higher_pd",
+      "lower_fa",
+      "higher_tiny_pd",
+      "higher_miou",
+      "higher_niou",
+      "lower_test_loss",
+      "earlier_epoch"
+    ],
+    "test_selected": true,
+    "selection_is_optimistic": true
+  },
+  "scope_guards": {
+    "official_test_data_must_not_be_opened": true,
+    "evaluation_must_not_be_started_by_registry": true
+  }
+}
