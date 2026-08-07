@@ -1,6 +1,6 @@
 # SCTransNet 历史模型实验结果总汇
 
-更新时间：2026-08-07
+更新时间：2026-08-08
 
 ## 1. 汇总结论
 
@@ -38,6 +38,12 @@
     第一排序项 mIoU，但仍低于 Current，因此没有突破 Original/Current 既有包络。
     本轮没有性能接受门槛；正式胜者属于 official-test 运营选择，必须按 optimistic
     selection 解读。
+11. IRSTD-BGCR 已完成严格 train-only 的 3-fold OOF：800 张 official-train 图像按
+    267/267/266 划分，epoch 0 与每 5 epoch 至 120 均在完整 held fold 上评估并精确
+    汇总。最终选择为 **epoch 0（Current）**；训练后 mIoU 最佳的 epoch 5 仍低
+    Current 0.607261 pp，epoch 120 低 1.617915 pp。因此 BGCR 不替换 Current，
+    full-selected 只生成 epoch-0 identity 审计候选。该结论没有访问 official test，
+    也不能与用户给定的独立训练 Baseline official 历史向量混为同一口径。
 
 当前总裁决仍为：
 
@@ -59,6 +65,10 @@ pbdr_v4_family_wins = original:4,current:2,v3_calibrated:0,v4_stage1:0,v4_stage2
 pbdr_v4_envelope_breakthrough = false
 pbdr_v4_operational_test_selected = true
 pbdr_v4_selection_is_optimistic = true
+irstd_bgcr_oof_status = complete_train_only
+irstd_bgcr_selected_epoch = 0
+irstd_bgcr_strictly_improves_current = false
+irstd_bgcr_deployment_decision = KEEP_CURRENT
 paper_core_established = false
 stability_claim_supported = false
 ```
@@ -74,9 +84,12 @@ stability_claim_supported = false
 |---|---|---:|---|---|---|
 | NUDT 内部筛选 | NUDT-SIRST 官方训练集内部 530/133 划分 | 800 | 主要为 42；V6/V7 及 TSS-on 补充轨迹另含 3407 | 内部验证集 | 模块与架构筛选 |
 | 多数据集实验 | 各数据集自己的 `img_idx/train`、`img_idx/test` | 1000 | 42 | test split 每 10 epoch 评估并选模 | 数据集内性能记录 |
+| IRSTD-BGCR train-only OOF | IRSTD-1K official-train 800 张，固定 3-fold 267/267/266 | 120；每 5 epoch | 42 | 三折 held-fold 充分统计精确 pooled；含 epoch 0 | 仅用于开发期选择，不是 official-test 结果 |
 
 多数据集 checkpoint 是 `test_selected=true`、`selection_is_optimistic=true`。因此它们是
 当前固定协议下的数据集内比较结果，不是独立测试或跨随机性结论。
+BGCR OOF 也必须单独读表：它与用户给定的独立训练 Baseline official 历史结果使用
+不同样本范围和选择协议，禁止直接拼成一个“单 checkpoint 全指标向量”。
 
 ### 2.2 指标定义
 
@@ -1473,29 +1486,62 @@ test、test index 或 official loader。固定概率工作点仍为严格 <code>
 
 ### 21.1 用户给定的独立训练 Baseline 与可直接比较的完整模型
 
-用户给定的独立训练 Baseline 原始数值如下。除 Fa 外均为百分数；Fa 单位为
-<code>×10⁻⁶</code>。
+用户给定的独立训练 Baseline 同时包含“全程最佳 mIoU”与“epoch 1000 完整指标”。
+这两个 checkpoint 不能拼接成一个单点向量。此前本节的直接比较表误把最佳 mIoU
+与 epoch-1000 的 nIoU/F1/Pd/Fa 放在同一行；现按原始语义拆开。除 Fa 外均为
+百分数，Fa 单位为 <code>×10⁻⁶</code>。
 
-| 数据集 | 最佳 mIoU checkpoint | Epoch 1000 mIoU | nIoU | F1 | Pd | Fa |
-|---|---:|---:|---:|---:|---:|---:|
-| NUAA-SIRST | **76.70** | 74.64 | 77.92 | 85.48 | 95.06 | 16.81 |
-| NUDT-SIRST | **93.99** | 93.13 | 93.85 | 96.44 | 98.84 | 6.83 |
-| IRSTD-1K | **67.74** | 66.65 | 66.82 | 79.97 | 93.27 | 11.60 |
+独立 Baseline 的最佳 checkpoint 只确认一个指标：
 
-只有已经完成同口径 official best-mIoU 评估的 Current 完整模型
-（<code>TPD8 + NER4 + QFG2，TSS-off</code>）可以与上表直接相减。下表为
-<code>Baseline → Current（Current − Baseline）</code>：
+| 数据集 | 独立 Baseline 全程最佳 mIoU (%) |
+|---|---:|
+| NUAA-SIRST | **76.70** |
+| NUDT-SIRST | **93.99** |
+| IRSTD-1K | **67.74** |
+
+独立 Baseline 的 epoch-1000 完整向量为：
+
+| 数据集 | Epoch 1000 mIoU | nIoU | F1 | Pd | Fa |
+|---|---:|---:|---:|---:|---:|
+| NUAA-SIRST | 74.64 | 77.92 | 85.48 | 95.06 | 16.81 |
+| NUDT-SIRST | 93.13 | 93.85 | 96.44 | 98.84 | 6.83 |
+| IRSTD-1K | 66.65 | 66.82 | 79.97 | 93.27 | 11.60 |
+
+上两表保留用户给定的公开显示精度。对 IRSTD-1K，本地 checkpoint/训练日志
+还能绑定两个更精确的工作点：
+
+| IRSTD 独立 Baseline checkpoint | mIoU | nIoU | F1 | Pd | Fa ×10⁻⁶ |
+|---|---:|---:|---:|---:|---:|
+| epoch 713 operational best | **67.7357929%** | 67.1640%* | 80.7586%* | 93.2659933% | 20.8005386 |
+| epoch 1000 terminal | 66.6485671% | 66.8172%* | 79.9749%* | 93.2659933% | **11.5959201** |
+
+`*` 表示训练日志只保留百分数四位小数。epoch 713 是从 epoch 500 起反复在
+official test 上评估并按 test mIoU 选出的 operational best，不是未见测试集选择；
+因此它只作历史对比目标，不做 BGCR teacher。
+
+因此与 Current 完整模型的数值并列也分两张表。第一张只比较各自已报告的最佳
+mIoU，不把其它 epoch-1000 指标带入：
+
+| 数据集 | 独立 Baseline 最佳 mIoU → Current mIoU（差值） |
+|---|---:|
+| NUAA-SIRST | 76.7000 → 79.6761 (**+2.9761 pp**) |
+| NUDT-SIRST | 93.9900 → 94.4373 (**+0.4473 pp**) |
+| IRSTD-1K | 67.7357929 → 66.0251398 (**−1.7106531 pp**) |
+
+第二张使用独立 Baseline 的 epoch-1000 完整向量；Current 仍是其正式 best-mIoU
+checkpoint，因此这是明确标注 checkpoint 语义的数值并列，不声称两边选择时点相同：
 
 | 数据集 | mIoU (%) | nIoU (%) | F1 (%) | Pd (%) | Fa (×10⁻⁶) |
 |---|---:|---:|---:|---:|---:|
-| NUAA-SIRST | 76.7000 → 79.6761 (**+2.9761 pp**) | 77.9200 → 79.5636 (**+1.6436 pp**) | 85.4800 → 88.6886 (**+3.2086 pp**) | 95.0600 → 97.3384 (**+2.2784 pp**) | 16.8100 → 15.4352 (**−1.3748**) |
-| NUDT-SIRST | 93.9900 → 94.4373 (**+0.4473 pp**) | 93.8500 → 94.6329 (**+0.7829 pp**) | 96.4400 → 97.1391 (**+0.6991 pp**) | 98.8400 → 99.0476 (**+0.2076 pp**) | 6.8300 → 2.7806 (**−4.0494**) |
-| IRSTD-1K | 67.7400 → 66.0251 (**−1.7149 pp**) | 66.8200 → 66.5585 (**−0.2615 pp**) | 79.9700 → 79.5363 (**−0.4337 pp**) | 93.2700 → 93.2660 (**−0.0040 pp**) | 11.6000 → 11.7288 (**+0.1288**) |
+| NUAA-SIRST | 74.6400 → 79.6761 (**+5.0361 pp**) | 77.9200 → 79.5636 (**+1.6436 pp**) | 85.4800 → 88.6886 (**+3.2086 pp**) | 95.0600 → 97.3384 (**+2.2784 pp**) | 16.8100 → 15.4352 (**−1.3748**) |
+| NUDT-SIRST | 93.1300 → 94.4373 (**+1.3073 pp**) | 93.8500 → 94.6329 (**+0.7829 pp**) | 96.4400 → 97.1391 (**+0.6991 pp**) | 98.8400 → 99.0476 (**+0.2076 pp**) | 6.8300 → 2.7806 (**−4.0494**) |
+| IRSTD-1K | 66.6485671 → 66.0251398 (**−0.6234273 pp**) | 66.8172 → 66.5585 (**−0.2587 pp**) | 79.9749 → 79.5363 (**−0.4386 pp**) | 93.2659933 → 93.2659933 (**0.0000 pp**) | 11.5959201 → 11.7287707 (**+0.1328506**) |
 
 直接结论：
 
 - Current 完整模型在 NUAA-SIRST 与 NUDT-SIRST 相对独立 Baseline 成功；
-- Current 在 IRSTD-1K 仍落后独立 Baseline，主要差距为 mIoU −1.7149 pp；
+- Current 在 IRSTD-1K 仍低于独立 Baseline epoch-713 operational best mIoU
+  1.7106531 pp；若与 Baseline epoch-1000 mIoU 并列，差距为 0.6234273 pp；
 - V5 只有内部验证结果，禁止把 V5 内部数值与上表独立 Baseline 直接相减，也
   不能把 V5 描述成新的 official 结果。
 
@@ -1701,7 +1747,175 @@ performance_acceptance_margin=null
 - 统一人类可读汇总：[INTERNAL_SUMMARY.md](results/pbdr_v5_v1/comparison/INTERNAL_SUMMARY.md)
 
 
-## 22. 权威结果来源
+## 22. IRSTD-BGCR 正式 train-only 3-fold OOF：完整结果与不替换裁决
+
+本节只汇总 canonical 目录
+[`results/irstd_bgcr_v1/`](results/irstd_bgcr_v1/) 中的正式 train-only 产物。
+`fold_0_pre_cpu_thread_fix`、`fold_1_pre_cpu_thread_fix` 和
+`frozen_context_cache.incomplete_pre_binarization_contract` 均是被正式合同排除的前置产物，
+不进入任何数值、选择或哈希结论。
+
+### 22.1 数据、训练与选择口径
+
+- 数据范围为 IRSTD-1K 的 800 张 <code>official_train_only</code> 图像；固定三折为
+  267/267/266。每个 fold 用另外两折训练，并在完整 held fold 上评估；三个 held fold
+  是 800 张图像的不重叠全集。
+- seed=42、FP32、TF32-off；训练 epoch 为 1–120，epoch 0 和每 5 epoch 至 120
+  评估。每个训练样本每 epoch 恰好出现一次；error-aware 三类与 counterfactual
+  0/1/2 在这一前提下确定性平衡，不做 rescue 样本重复过采样。
+- OOF 不是三个四舍五入后 fold 指标的算术平均。mIoU、Pd、Fa、像素
+  TP/FP/FN 先汇总可加充分统计再计算；nIoU 与 loss 使用三折保存的精确有理数和。
+- 固定 <code>probability_threshold=0.5</code>、比较为
+  <code>strict_greater_than</code>。这是二值化测量工作点，不是性能接受门槛；
+  <code>performance_acceptance_margin=null</code>，完整 role key 只需严格改善即可胜出。
+- epoch 0 的两个 residual terminal 为精确零，因此 BGCR 输出与冻结 Current 位级一致。
+  `Baseline-epoch1000` 只作为同一 train-only OOF 投影上的冻结参考 logits，不参与最终
+  BGCR 推理，也不是第 21.1 节用户给定的独立训练 Baseline official 历史表。
+- 正式 [`oof_selection.json`](results/irstd_bgcr_v1/oof_selection.json) 给出
+  <code>selected_epoch=0</code>、<code>strictly_improves_epoch0_miou=false</code>、
+  <code>strictly_improves_epoch0_full_role_key=false</code>。因此正式裁决是
+  **保留 Current，不用训练后的 BGCR 替换 Current**。
+
+### 22.2 Current、同投影 Baseline1000 与 BGCR 关键工作点
+
+mIoU、nIoU、F1、Pd、tiny-Pd 为百分数；Fa 单位为 <code>×10⁻⁶</code>；
+BCE loss 是逐样本均值的原始小数。TP/FP/FN 是逐像素统计，与 component-Fa
+不是同一分子。`ΔmIoU` 均相对 epoch-0 Current。
+本表所有差值都只在同一个 800-sample train-only OOF 投影内计算；**不计算这里的
+Current/BGCR 与第 21.1 节 historical independent-Baseline official 数值之间的跨
+split 差值**。
+
+| OOF 模型/工作点 | Epoch | mIoU | nIoU | F1 | Pd | Fa | tiny-Pd | TP / FP / FN | BCE loss | ΔmIoU (pp) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **Current（正式 selected）** | **0** | **78.224854** | **72.858877** | **87.782206** | 98.493724 | **5.311966** | 90.769231 | 52977 / 7275 / 7472 | **0.000167799** | 0 |
+| Baseline-epoch1000（冻结 OOF 参考） | 0 | 78.109365 | 73.124301 | 87.709442 | 98.242678 | 8.845329 | 88.461538 | 53237 / 7708 / 7212 | 0.000170304 | −0.115489 |
+| **BGCR 训练后 mIoU 最佳** | **5** | **77.617593** | **72.579284** | **87.398542** | **98.744770** | 7.424355 | 90.769231 | 55131 / 10580 / 5318 | 0.000180026 | **−0.607261** |
+| BGCR 训练后 mIoU 最低 | 25 | 75.655825 | 70.490142 | 86.140981 | 98.744770 | 10.194778 | 92.307692 | 53152 / 9806 / 7297 | 0.000202298 | −2.569029 |
+| BGCR 训练终点 | 120 | 76.606939 | 71.255282 | 86.754166 | 98.577406 | 8.788109 | 90.769231 | 50962 / 6075 / 9487 | 0.000203092 | −1.617915 |
+
+解释：Baseline1000 在 nIoU 上比 Current 高 0.265423 pp，但 mIoU 低 0.115489 pp，
+且 Fa、tiny-Pd 更差；它只是同 train-only OOF 投影上的参考，不覆盖独立 official
+Baseline 历史。BGCR epoch 5 把 Pd 提高 0.251046 pp、减少 FN 2154，但同时增加
+FP 3305，导致 mIoU、nIoU 和 F1 全部回退。epoch 120 同样没有形成可采用的整体改善。
+
+各关键点相对 Current 的完整差值如下；指标差值单位为 pp，Fa 仍为
+<code>×10⁻⁶</code>，loss 为绝对差值：
+
+| 工作点 | ΔmIoU | ΔnIoU | ΔF1 | ΔPd | ΔFa | Δtiny-Pd | ΔTP | ΔFP | ΔFN | Δloss |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Baseline1000 | −0.115489 | +0.265423 | −0.072764 | −0.251046 | +3.533363 | −2.307692 | +260 | +433 | −260 | +0.000002505 |
+| BGCR epoch 5 | −0.607261 | −0.279593 | −0.383664 | +0.251046 | +2.112389 | 0 | +2154 | +3305 | −2154 | +0.000012227 |
+| BGCR epoch 25 | −2.569029 | −2.368735 | −1.641225 | +0.251046 | +4.882812 | +1.538462 | +175 | +2531 | −175 | +0.000034499 |
+| BGCR epoch 120 | −1.617915 | −1.603595 | −1.028039 | +0.083682 | +3.476143 | 0 | −2015 | −1200 | +2015 | +0.000035293 |
+
+逐折局部轨迹如下。fold 2 确实在 epoch 5 局部提高 0.196097 pp，但 fold 0/1 的
+训练后最佳仍低于各自 epoch 0；协议要求同一全局 epoch 精确 pooled，不能把三个 fold
+各自最优 epoch 拼成一个候选。
+
+| Fold | Epoch-0 Current mIoU | 该 fold 训练后最佳 epoch / mIoU | 差值 (pp) |
+|---:|---:|---:|---:|
+| 0 | 77.339854 | 40 / 76.935374 | −0.404479 |
+| 1 | 79.079643 | 10 / 79.021401 | −0.058242 |
+| 2 | 78.164465 | 5 / 78.360562 | +0.196097 |
+
+### 22.3 epoch 0/5/…/120 的完整 pooled OOF 轨迹
+
+下表直接来自 `selection.epoch_summaries[].metrics`；epoch 0 是 identity Current，
+其余 24 行均为训练后 BGCR。所有训练后 mIoU 都低于 epoch 0；其中最高为 epoch 5，
+最低为 epoch 25（75.655825%）。
+
+| Epoch | mIoU | nIoU | F1 | Pd | Fa (×10⁻⁶) | tiny-Pd | TP | FP | FN | BCE loss |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **0** | **78.224854** | **72.858877** | **87.782206** | 98.493724 | **5.311966** | 90.769231 | 52977 | 7275 | 7472 | **0.000167799** |
+| **5** | **77.617593** | **72.579284** | **87.398542** | 98.744770 | 7.424355 | 90.769231 | 55131 | 10580 | 5318 | **0.000180026** |
+| 10 | 77.279821 | 72.312206 | 87.184002 | 98.828452 | 7.419586 | 92.307692 | 53973 | 9392 | 6476 | 0.000182272 |
+| 15 | 76.308490 | 71.199291 | 86.562468 | 99.079498 | 9.708405 | 93.076923 | 54192 | 10568 | 6257 | 0.000196924 |
+| 20 | 76.420634 | 71.318108 | 86.634576 | 98.912134 | 8.878708 | 92.307692 | 53363 | 9379 | 7086 | 0.000195755 |
+| 25 | 75.655825 | 70.490142 | 86.140981 | 98.744770 | 10.194778 | 92.307692 | 53152 | 9806 | 7297 | 0.000202298 |
+| 30 | 76.177413 | 71.036601 | 86.478069 | 98.661088 | 9.660721 | 91.538462 | 53037 | 9174 | 7412 | 0.000197499 |
+| 35 | 77.082990 | 71.647828 | 87.058604 | 98.828452 | 7.681847 | 92.307692 | 51392 | 6222 | 9057 | 0.000189291 |
+| 40 | 77.036285 | 71.675357 | 87.028809 | 98.828452 | 7.858276 | 92.307692 | 51612 | 6548 | 8837 | 0.000192121 |
+| 45 | 77.004932 | 71.536016 | 87.008798 | 98.661088 | 8.668900 | 91.538462 | 51524 | 6461 | 8925 | 0.000194164 |
+| 50 | 77.353142 | 71.975409 | 87.230642 | 98.828452 | 7.977486 | 91.538462 | 52119 | 6929 | 8330 | 0.000195073 |
+| 55 | 76.938587 | 71.653476 | 86.966431 | 98.912134 | 8.063316 | 92.307692 | 51515 | 6507 | 8934 | 0.000201250 |
+| 60 | 76.730668 | 71.476891 | 86.833450 | 98.744770 | 7.381439 | 91.538462 | 50953 | 5956 | 9496 | 0.000195572 |
+| 65 | 77.033809 | 71.721447 | 87.027229 | 99.079498 | 7.214546 | 93.846154 | 51266 | 6101 | 9183 | 0.000194730 |
+| 70 | 76.713788 | 71.442544 | 86.822640 | 98.744770 | 7.925034 | 90.769231 | 51119 | 6187 | 9330 | 0.000199734 |
+| 75 | 77.206267 | 71.866784 | 87.137175 | 98.661088 | 8.726120 | 91.538462 | 51590 | 6372 | 8859 | 0.000195266 |
+| 80 | 76.732077 | 71.516543 | 86.834352 | 98.744770 | 8.516312 | 92.307692 | 50990 | 6003 | 9459 | 0.000199246 |
+| 85 | 76.576059 | 71.185996 | 86.734362 | 98.577406 | 7.495880 | 90.769231 | 50652 | 5697 | 9797 | 0.000195815 |
+| 90 | 76.748299 | 71.329187 | 86.844738 | 98.661088 | 7.944107 | 90.769231 | 51208 | 6273 | 9241 | 0.000202410 |
+| 95 | 76.711279 | 71.352578 | 86.821033 | 98.577406 | 8.945465 | 90.769231 | 51069 | 6124 | 9380 | 0.000201598 |
+| 100 | 76.521961 | 71.178313 | 86.699650 | 98.493724 | 8.916855 | 90.000000 | 50907 | 6077 | 9542 | 0.000204066 |
+| 105 | 76.631822 | 71.251883 | 86.770120 | 98.493724 | 8.826256 | 90.000000 | 51023 | 6133 | 9426 | 0.000203553 |
+| 110 | 76.625952 | 71.247967 | 86.766357 | 98.577406 | 8.854866 | 90.769231 | 51003 | 6112 | 9446 | 0.000203387 |
+| 115 | 76.615547 | 71.264728 | 86.759686 | 98.577406 | 8.783340 | 90.769231 | 50957 | 6061 | 9492 | 0.000202959 |
+| **120** | **76.606939** | **71.255282** | **86.754166** | **98.577406** | **8.788109** | **90.769231** | **50962** | **6075** | **9487** | **0.000203092** |
+
+### 22.4 Cache、GPU、测试资产、候选与哈希
+
+正式 cache 是 800 项、只读、host-RAM-resident 的冻结上下文缓存。每项包含
+image/target、Current 的 `u1` 与六个 logits、Baseline1000 logits、两个 component-ID
+图和八个 atlas bool mask；训练进程启动时逐项验证并常驻内存，后续 epoch 不重复解压。
+
+| 产物/合同 | 正式记录 |
+|---|---|
+| Cache schema / status | `sctransnet_irstd_bgcr_frozen_context_cache_v1/v1` / `complete` |
+| Cache sample count | 800 |
+| Cache manifest file SHA-256 | `90c5a1fce85920ded133183a9f1b7f01083d7c7e774e1d6a4d52609033e68ec3` |
+| Cache manifest semantic SHA-256 | `cda0859ffb55d4cf7237e5b0750387b1a624ff4e6c27d008c27a11a4811ff0c3` |
+| Cache identity SHA-256 | `3d5a4a0a1013c78003d6e22bffa11846be1b903193b9ab1df1a8320c3c7a4734` |
+| Fold manifest / assignment SHA-256 | `8ec2db388d083c8fe5e3750b5e66ba280b9796ca35f514e88323dfc029953fd0` / `a7ce375391e27e53bdad5f67599d470b336f70c304e22a96b8aa3fef6283c583` |
+| OOF selection file / semantic SHA-256 | `4f238f74ed2bf7fa1467ec33679f35dd9f2a2d5963353fc2601d88219b8afe41` / `315e26bd252b5d260d9bd644f9ffa4f76bfaa59afa4ceaabd06f04e209b13365` |
+| Full-selected summary file / self SHA-256 | `89f611310bac6527e087dbffdbfbf247d7dae750091cb4d5359b8a79eef71699` / `51895ef812ad7632c66cea26fbea210940533a2401dab8aa79639d36cfcf62dd` |
+| Current 564-key base semantic SHA-256 | `f3745109e889cc6f25e42a43e698c5a43516ddc96a1364ffc78ab4b6b09d7f4f`；final audit 为 bitwise equal、全部 frozen、全部 base grad 为 `None` |
+| Integrated candidate | 595 keys；file SHA `ad9049d85772673e60d390d2284f5995e52f36edcab53995fb3309163a573903`；state-semantic SHA `e6a81e9b3ed5a8d76528ed7df45c9e2a7c1b6b9ee3cb48c460f68402d1facfbf` |
+
+GPU 只影响执行位置，没有改变 seed、数据、fold、loss、优化器或选择合同：
+
+| 任务 | GPU | UUID |
+|---|---|---|
+| fold 0 | NVIDIA GeForce RTX 5090 | `4a0f4ab5-9d4e-20d9-4e7a-515e2d4e0562` |
+| fold 1 | NVIDIA GeForce RTX 5090 | `8d68eb9e-49d3-67f6-f715-6ef2ac4975c3` |
+| fold 2 | NVIDIA GeForce RTX 5090 | `4a0f4ab5-9d4e-20d9-4e7a-515e2d4e0562` |
+| full-selected epoch-0 identity build | NVIDIA GeForce RTX 5090 | `4a0f4ab5-9d4e-20d9-4e7a-515e2d4e0562` |
+
+代码侧现有 6 个 BGCR 专项测试文件，覆盖 cache、head/loss、
+model contract、pipeline、run contract 和 OOF selector：
+
+- [`test_irstd_bgcr_cache.py`](tests/test_irstd_bgcr_cache.py)
+- [`test_irstd_bgcr_core.py`](tests/test_irstd_bgcr_core.py)
+- [`test_irstd_bgcr_model_contract.py`](tests/test_irstd_bgcr_model_contract.py)
+- [`test_irstd_bgcr_pipeline.py`](tests/test_irstd_bgcr_pipeline.py)
+- [`test_irstd_bgcr_run_contract.py`](tests/test_irstd_bgcr_run_contract.py)
+- [`test_select_irstd_bgcr_oof_v1.py`](tests/test_select_irstd_bgcr_oof_v1.py)
+
+2026-08-08 最终复验用上述 6 个文件完整收集了 **82 个 pytest item**，
+结果为 **82 passed、5 warnings、0 failures/errors**，用时 129.31 s；警告只是
+4 条 `thop`/`distutils` 弃用警告和 1 条测试断言中的 tensor-to-scalar 警告。
+可复核记录见
+[`PYTEST_VERIFICATION_20260808.md`](results/irstd_bgcr_v1/PYTEST_VERIFICATION_20260808.md)。
+该测试命令只运行合成/合同测试，没有构造或访问 official-test index、loader
+或 evaluation。Cache、三折 summary、selector、full summary 和 candidate 的正式产物
+均声明以下五项为 false：
+`official_test_accessed`、`official_test_index_opened`、
+`official_test_index_parsed`、`official_test_loader_built`、
+`official_evaluation_performed`；同时 `performance_acceptance_margin=null`，cache 兼容字段
+`margin=null`。因此本节只能支持 train-only OOF 的“不替换 Current”裁决，不能生成
+新的 official-test 性能声明。
+
+正式产物：
+
+- 冻结方案：[SCTransNet_IRSTD专项优化_冻结主模型_BGCR代码方案.md](SCTransNet_IRSTD专项优化_冻结主模型_BGCR代码方案.md)
+- 三折 manifest：[fold_manifest.json](results/irstd_bgcr_v1/fold_manifest.json)
+- 三折 summary：[fold 0](results/irstd_bgcr_v1/fold_0/summary.json)、[fold 1](results/irstd_bgcr_v1/fold_1/summary.json)、[fold 2](results/irstd_bgcr_v1/fold_2/summary.json)
+- OOF selection：[oof_selection.json](results/irstd_bgcr_v1/oof_selection.json)
+- Cache commit：[COMMITTED.json](results/irstd_bgcr_v1/frozen_context_cache/COMMITTED.json)
+- Full-selected summary：[summary.json](results/irstd_bgcr_v1/full_selected/summary.json)
+- Integrated candidate：[integrated_candidate.pth.tar](results/irstd_bgcr_v1/full_selected/integrated_candidate.pth.tar)
+
+
+## 23. 权威结果来源
 
 - 初代 TPD、V6、V7、NER、TSS、QFG 与工程认证摘要：[`README.md`](README.md)
 - 初代 TPD 研究裁决：[`TPD_SCTransNet_主线修订版.md`](TPD_SCTransNet_主线修订版.md)
@@ -1736,6 +1950,9 @@ performance_acceptance_margin=null
 - PBDR-V5 失败定位：[failure_localization_bundle.json](results/pbdr_v5_v1/diagnostics/failure_localization_bundle.json)
 - PBDR-V5 六族内部汇总：[INTERNAL_SUMMARY.md](results/pbdr_v5_v1/comparison/INTERNAL_SUMMARY.md)
 - PBDR-V5 机器可读证据：[results/pbdr_v5_v1/](results/pbdr_v5_v1/)
+- IRSTD-BGCR 冻结方案：[SCTransNet_IRSTD专项优化_冻结主模型_BGCR代码方案.md](SCTransNet_IRSTD专项优化_冻结主模型_BGCR代码方案.md)
+- IRSTD-BGCR train-only OOF 选择：[oof_selection.json](results/irstd_bgcr_v1/oof_selection.json)
+- IRSTD-BGCR cache、三折与 full-selected 证据：[results/irstd_bgcr_v1/](results/irstd_bgcr_v1/)
 
 本文件只汇总已经落盘并完成口径核对的正式结果；后续模型完成后，应追加对应结果，
 不覆盖或改写历史表。
